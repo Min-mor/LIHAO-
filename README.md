@@ -14,7 +14,7 @@
  git commit -m "提交信息" 
 
  ## 把本地仓库push到gitea上面
- git push -u origin master 
+ git push origin master 
  ````   
  也可使用 vscode 上的 git 功能，各取所需。
 
