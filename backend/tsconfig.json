@@ -1,0 +1,10 @@
+{
+  "vueCompilerOptions": {
+    "nativeTags": [
+      "block",
+      "component",
+      "template",
+      "slot"
+    ]
+  }
+}

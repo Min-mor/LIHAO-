@@ -2,7 +2,7 @@
 
 ## 前言
 
-本仓库主要用于本小组在大四上学期的两门小组作业。
+本仓库主要用于本小组在大四上学期的两门小组作业。分别是项目实训和 uni-app
 
 ## 一、本仓库使用方法
 
@@ -10,6 +10,7 @@
 
 在开始之前，请确保你的电脑已经安装了 Git 。
 - Windows 用户推荐使用 [Git for Windows](https://git-scm.com/download/win) 或 [Scoop](#scoop) ；
+
 安装完成后，请进行基础的用户名和邮箱配置。
 
 ````Bash
@@ -26,7 +27,7 @@ git config --global user.email "你的邮箱@example.com"
 git clone http://154.222.28.16:3000/Top_Gun/Group_Work
 ````
 
-建议先通过命令行完成首次克隆，然后使用 VSCode 打开克隆到本地的文件夹来进行后续的开发和 Git 操作。
+建议先通过命令行完成首次克隆，然后使用 VSCode 打开克隆到本地的文件夹来进行后续的开发和 Git 操作。本地推送前，请确保根目录下的 .gitignore 文件有屏蔽诸如 node_modules 文件夹，来防止将一些不必要的大文件推送至 Gitea 而浪费大量时间。
 
 ### 3. 日常开发流程
 
@@ -40,7 +41,7 @@ git clone http://154.222.28.16:3000/Top_Gun/Group_Work
 
 #### 第3步：推送分支到远程仓库
 
-将本地分支推送到 Gitea 远程仓库，并为后续的合并做准备。最好注明此次推送修改的内容.
+将本地分支推送到 Gitea 远程仓库，并为后续的合并做准备。最好注明此次推送修改的内容。
 
 如果推送失败，则因为远程分支比你的本地更新，需要手动拉取一下最新代码。
 
@@ -79,6 +80,7 @@ git clone http://154.222.28.16:3000/Top_Gun/Group_Work
 │       ├── api/
 │       │   └── ...
 │       └── ...
+└── .gitignore              #用于屏蔽某些文件或文件夹上传至 git
 └── README.md
 ````
 
@@ -154,7 +156,7 @@ public class HelloWorld {
 
 文档在行文编写部分，个人认为 [《给程序员的中文写作指北》](https://blog.csdn.net/weixin_39638014/article/details/112327421) 一文中说明的特别详尽，本节使用原文引用。
 
-同时，也推荐 [《中文文案排版指北》](https://segmentfault.com/a/1190000045085359) 一文中当中有些工具特别优质，可以作为参考。
+同时，也推荐 [《中文文案排版指北》](https://segmentfault.com/a/1190000045085359) 一文，文末推荐了很多实用工具，可以作为参考。
 
 #### 1. 句子长度
 
@@ -194,7 +196,7 @@ public class HelloWorld {
 
 同时引用丰富的链接还可以帮助搜索引擎确定你的权威性——你不光文章写出来了，还指向了靠谱的参考文献，因此搜索引擎也会觉得你这篇文章的靠谱程度很高。
 
-## 工具推荐以及安装方式
+## 四、工具推荐以及安装方式
 
 ### Scoop 
 
@@ -226,4 +228,14 @@ irm get.scoop.sh -outfile 'install.ps1'
 
 Scoop 的官方文档对于新手非常友好，推荐阅读 [官方文档](https://github.com/ScoopInstaller/Scoop) 或 [快速入门](https://github.com/ScoopInstaller/Scoop/wiki/Quick-Start) 。
 ### Git
-推荐阅读 [《Git 学习笔记》](https://ideepspace.gitbooks.io/git/content/) 主要关注里面的分支管理以及里面的 *第五部分* 。
+推荐阅读 [《Git 学习笔记》](https://ideepspace.gitbooks.io/git/content/) 重点关注里面的分支管理以及里面的 *第五部分* 。
+
+## 五、技术栈
+- 核心框架：uni-app
+- 导航：
+- 状态管理：
+- UI框架：wot-ui
+- 地图：
+- 存储：
+- 网络请求：
+- 样式：
