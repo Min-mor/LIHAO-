@@ -67,10 +67,10 @@ git clone http://154.222.28.16:3000/Top_Gun/Group_Work
 ````
 ./
 ├── assets/                 #通用资源
-├── backend/                #前端
+├── backend/                #后端
 │   └── src/
 │       └── ... (源代码)
-├── frontend/               #后端
+├── frontend/               #前端
 │   └── src/
 │       └── ... (源代码)
 ├── docs/                   #手册文件
