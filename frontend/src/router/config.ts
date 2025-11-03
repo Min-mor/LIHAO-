@@ -1,18 +1,16 @@
 import { getAllPages } from '@/utils'
 
 export const LOGIN_STRATEGY_MAP = {
-  DEFAULT_NO_NEED_LOGIN: 0, // 黑名单策略，默认可以进入APP
-  DEFAULT_NEED_LOGIN: 1, // 白名单策略，默认不可以进入APP，需要强制登录
+  DEFAULT_NO_NEED_LOGIN: 0,
+  DEFAULT_NEED_LOGIN: 1,
 }
-// TODO: 1/3 登录策略，默认使用`无需登录策略`，即默认不需要登录就可以访问
 export const LOGIN_STRATEGY = LOGIN_STRATEGY_MAP.DEFAULT_NO_NEED_LOGIN
 export const isNeedLoginMode = LOGIN_STRATEGY === LOGIN_STRATEGY_MAP.DEFAULT_NEED_LOGIN
 
-export const LOGIN_PAGE = '/pages-fg/login/login'
-export const REGISTER_PAGE = '/pages-fg/login/register'
+export const LOGIN_PAGE = '/pages/login/index'
 export const NOT_FOUND_PAGE = '/pages-fg/404/index'
 
-export const LOGIN_PAGE_LIST = [LOGIN_PAGE, REGISTER_PAGE]
+export const LOGIN_PAGE_LIST = [LOGIN_PAGE]
 
 // 在 definePage 里面配置了 excludeLoginPath 的页面，功能与 EXCLUDE_LOGIN_PATH_LIST 相同
 export const excludeLoginPathList = getAllPages('excludeLoginPath').map(page => page.path)

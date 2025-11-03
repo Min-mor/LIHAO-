@@ -81,10 +81,12 @@ declare global {
   const useCssModule: typeof import('vue')['useCssModule']
   const useCssVars: typeof import('vue')['useCssVars']
   const useId: typeof import('vue')['useId']
+  const useLoginGuard: typeof import('../hooks/useLoginGuard')['useLoginGuard']
   const useModel: typeof import('vue')['useModel']
   const useRequest: typeof import('../hooks/useRequest')['default']
   const useScroll: typeof import('../hooks/useScroll')['useScroll']
   const useSlots: typeof import('vue')['useSlots']
+  const useSmsCode: typeof import('../hooks/useSmsCode')['useSmsCode']
   const useTemplateRef: typeof import('vue')['useTemplateRef']
   const useUpload: typeof import('../hooks/useUpload')['default']
   const watch: typeof import('vue')['watch']
@@ -97,6 +99,9 @@ declare global {
   // @ts-ignore
   export type { Component, Slot, Slots, ComponentPublicInstance, ComputedRef, DirectiveBinding, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, ShallowRef, MaybeRef, MaybeRefOrGetter, VNode, WritableComputedRef } from 'vue'
   import('vue')
+  // @ts-ignore
+  export type { LoginGuardOptions } from '../hooks/useLoginGuard'
+  import('../hooks/useLoginGuard')
 }
 
 // for vue template auto import
@@ -179,10 +184,12 @@ declare module 'vue' {
     readonly useCssModule: UnwrapRef<typeof import('vue')['useCssModule']>
     readonly useCssVars: UnwrapRef<typeof import('vue')['useCssVars']>
     readonly useId: UnwrapRef<typeof import('vue')['useId']>
+    readonly useLoginGuard: UnwrapRef<typeof import('../hooks/useLoginGuard')['useLoginGuard']>
     readonly useModel: UnwrapRef<typeof import('vue')['useModel']>
     readonly useRequest: UnwrapRef<typeof import('../hooks/useRequest')['default']>
     readonly useScroll: UnwrapRef<typeof import('../hooks/useScroll')['useScroll']>
     readonly useSlots: UnwrapRef<typeof import('vue')['useSlots']>
+    readonly useSmsCode: UnwrapRef<typeof import('../hooks/useSmsCode')['useSmsCode']>
     readonly useTemplateRef: UnwrapRef<typeof import('vue')['useTemplateRef']>
     readonly useUpload: UnwrapRef<typeof import('../hooks/useUpload')['default']>
     readonly watch: UnwrapRef<typeof import('vue')['watch']>

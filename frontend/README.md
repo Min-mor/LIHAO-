@@ -2,6 +2,9 @@
 
 该文件夹主要用于存放前端项目文件。
 
+## 版本记录
+- 2025-10-15：在 `dev` 分支启动 Phase 0 奠基任务，执行 README 与 TODO 更新流程。
+
 # 1. 环境准备
 
 本项目的前端使用 `Vue3 + TypeScript` 编写，为了同时满足两门课的需求，故采用了 `uni-app` 来完成。
@@ -35,7 +38,7 @@ frontend/
 采用 [Wot-UI](https://wot-ui.cn/) 作为组件库的主要原因有：
 - 首先是设计风格契合本项目的轻量化、现代化和简约化，在视觉上弥补了 `uni-app` 无法使用 vue 的原生组件的困境。
 - 同时由于它是为 `uni-app` 量身打造的，可以确保在 App、小程序、H5 等多端拥有一致且稳定的表现。
-- 支持按需加载，不会使得应用程序变得臃肿，同样也支持主题定制，你可以根据需求调整颜色、字体等基础样式。
+- 支持按需加载，不会使得应用程序变得臃肿，同样也支持主题定制，可以根据需求调整颜色、字体等基础样式。
 
 
 ## 二、 配色规范
@@ -65,6 +68,9 @@ frontend/
 ## 四、 字体系统
 
 **主要字体**：Noto Serif，以保证跨平台的性能和一致性。
+- H5 端通过 `@font-face` 引入 `static/fonts/NotoSerifSC-Regular.ttf`，提供 `swap` 策略与本地 serif fallback。
+- 小程序、App 端在 `src/utils/font.ts` 中调用 `uni.loadFontFace` 全局注册字体，并在应用启动 (`src/main.ts`) 时初始化。
+- 小程序端使用 `src/utils/systemInfo.ts` 暴露的 `safeAreaInsets` 计算页面内边距，配合 `env(safe-area-inset-*)` 变量处理 iOS 底部按键遮挡。
 - 字重：
 - 字号体系：
     -

@@ -7,7 +7,7 @@ import { isMp } from '@uni-helper/uni-env'
 import { useTokenStore } from '@/store/token'
 import { isPageTabbar, tabbarStore } from '@/tabbar/store'
 import { getAllPages, getLastPage, HOME_PAGE, parseUrlToObj } from '@/utils/index'
-import { EXCLUDE_LOGIN_PATH_LIST, isNeedLoginMode, LOGIN_PAGE, LOGIN_PAGE_ENABLE_IN_MP, NOT_FOUND_PAGE } from './config'
+import { EXCLUDE_LOGIN_PATH_LIST, isNeedLoginMode, LOGIN_PAGE, LOGIN_PAGE_ENABLE_IN_MP, LOGIN_PAGE_LIST, NOT_FOUND_PAGE } from './config'
 
 export const FG_LOG_ENABLE = false
 export function judgeIsExcludePath(path: string) {
@@ -52,6 +52,11 @@ export const navigateToInterceptor = {
 
     // 处理直接进入路由非首页时，tabbarIndex 不正确的问题
     tabbarStore.setAutoCurIdx(path)
+
+    const isLoginRoute = LOGIN_PAGE_LIST.includes(path) || path.startsWith('/pages/login/')
+    if (isLoginRoute) {
+      return true
+    }
 
     // 小程序里面使用平台自带的登录，则不走下面的逻辑
     if (isMp && !LOGIN_PAGE_ENABLE_IN_MP) {

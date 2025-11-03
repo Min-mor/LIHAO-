@@ -4,11 +4,11 @@ import { ref } from 'vue'
 import {
   getUserInfo,
 } from '@/api/login'
+import { mockFetchUserInfo } from '@/mock/social'
 
 // 初始化状态
 const userInfoState: IUserInfoRes = {
   userId: -1,
-  username: '',
   nickname: '',
   avatar: '/static/images/default-avatar.png',
 }
@@ -42,7 +42,7 @@ export const useUserStore = defineStore(
      * 获取用户信息
      */
     const fetchUserInfo = async () => {
-      const res = await getUserInfo()
+      const res = import.meta.env.DEV ? await mockFetchUserInfo() : await getUserInfo()
       setUserInfo(res)
       return res
     }

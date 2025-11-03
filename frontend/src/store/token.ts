@@ -12,6 +12,7 @@ import {
   getWxCode,
 } from '@/api/login'
 import { isDoubleTokenRes, isSingleTokenRes } from '@/api/types/login'
+import { mockLoginByPhone, resetActiveUser } from '@/mock/social'
 import { isDoubleTokenMode } from '@/utils'
 import { useUserStore } from './user'
 
@@ -122,6 +123,29 @@ export const useTokenStore = defineStore(
       }
     }
 
+    const loginByPhoneMock = async (phone: string, password?: string) => {
+      if (!import.meta.env.DEV) {
+        throw new Error('mock 登录仅在开发环境可用')
+      }
+      try {
+        const res = await mockLoginByPhone(phone, password)
+        await _postLogin(res)
+        uni.showToast({
+          title: '登录成功',
+          icon: 'success',
+        })
+        return res
+      }
+      catch (error) {
+        const message = error instanceof Error ? error.message : '登录失败，请重试'
+        uni.showToast({
+          title: message,
+          icon: 'none',
+        })
+        throw error
+      }
+    }
+
     /**
      * 微信登录
      * 有的时候后端会用一个接口返回token和用户信息，有的时候会分开2个接口，一个获取token，一个获取用户信息
@@ -173,7 +197,20 @@ export const useTokenStore = defineStore(
         uni.removeStorageSync('token')
         const userStore = useUserStore()
         userStore.clearUserInfo()
+        if (import.meta.env.DEV) {
+          resetActiveUser()
+        }
       }
+    }
+
+    const logoutByMock = async () => {
+      // TODO【可选】：如果登录数据结构比较复杂，可以在这里做细化处理。演示demo只做简单处理
+      tokenInfo.value = { ...tokenInfoState }
+      uni.removeStorageSync('accessTokenExpireTime')
+      uni.removeStorageSync('refreshTokenExpireTime')
+      resetActiveUser()
+      const userStore = useUserStore()
+      userStore.clearUserInfo()
     }
 
     /**
@@ -267,8 +304,10 @@ export const useTokenStore = defineStore(
     return {
       // 核心API方法
       login,
+      loginByPhoneMock,
       wxLogin,
       logout,
+      logoutByMock,
 
       // 认证状态判断（最常用的）
       hasLogin: hasValidLogin,

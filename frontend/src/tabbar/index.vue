@@ -30,13 +30,33 @@ function handleClick(index: number) {
     handleClickBulge()
     return
   }
-  const url = tabbarList[index].pagePath
-  tabbarStore.setCurIdx(index)
+  const target = tabbarList[index].pagePath.startsWith('/') ? tabbarList[index].pagePath : `/${tabbarList[index].pagePath}`
+  const prevIdx = tabbarStore.curIdx
+
   if (tabbarCacheEnable) {
-    uni.switchTab({ url })
+    uni.switchTab({
+      url: target,
+      success: () => {
+        tabbarStore.setCurIdx(index)
+      },
+      fail: (error) => {
+        console.warn('[tabbar] switchTab fail:', error)
+        uni.showToast({ title: '页面跳转失败', icon: 'none' })
+      },
+    })
   }
   else {
-    uni.navigateTo({ url })
+    uni.reLaunch({
+      url: target,
+      success: () => {
+        tabbarStore.setCurIdx(index)
+      },
+      fail: (error) => {
+        console.warn('[tabbar] reLaunch fail:', error)
+        tabbarStore.setCurIdx(prevIdx)
+        uni.showToast({ title: '页面跳转失败', icon: 'none' })
+      },
+    })
   }
 }
 // #ifndef MP-WEIXIN || MP-ALIPAY
@@ -69,10 +89,8 @@ onMounted(() => {
   })
 })
 // #endif
-const activeColor = 'var(--wot-color-theme, #1890ff)'
-const inactiveColor = '#666'
-function getColorByIndex(index: number) {
-  return tabbarStore.curIdx === index ? activeColor : inactiveColor
+function isActiveIndex(index: number) {
+  return tabbarStore.curIdx === index
 }
 
 function getImageByIndex(index: number, item: CustomTabBarItem) {
@@ -82,91 +100,94 @@ function getImageByIndex(index: number, item: CustomTabBarItem) {
   }
   return tabbarStore.curIdx === index ? item.iconActive : item.icon
 }
+
+function getIconColor(index: number) {
+  return isActiveIndex(index) ? '#A0D4C4' : '#FCFBFA'
+}
 </script>
 
 <template>
-  <view v-if="customTabbarEnable" class="h-50px pb-safe">
-    <view class="border-and-fixed bg-white" @touchmove.stop.prevent>
-      <view class="h-50px flex items-center">
-        <view
-          v-for="(item, index) in tabbarList" :key="index"
-          class="flex flex-1 flex-col items-center justify-center"
-          :style="{ color: getColorByIndex(index) }"
-          @click="handleClick(index)"
-        >
-          <view v-if="item.isBulge" class="relative">
-            <!-- 中间一个鼓包tabbarItem的处理 -->
-            <view class="bulge">
-              <!-- TODO 2/2: 中间鼓包tabbarItem配置：通常是一个图片，或者icon，点击触发业务逻辑 -->
-              <!-- 常见的是：扫描按钮、发布按钮、更多按钮等 -->
-              <image class="mt-6rpx h-200rpx w-200rpx" src="/static/tabbar/scan.png" />
-            </view>
-          </view>
-          <view v-else class="relative px-3 text-center">
-            <template v-if="item.iconType === 'uiLib'">
-              <!-- TODO: 以下内容请根据选择的UI库自行替换 -->
-              <!-- 如：<wd-icon name="home" /> (https://wot-design-uni.cn/component/icon.html) -->
-              <!-- 如：<uv-icon name="home" /> (https://www.uvui.cn/components/icon.html) -->
-              <!-- 如：<sar-icon name="image" /> (https://sard.wzt.zone/sard-uniapp-docs/components/icon)(sar没有home图标^_^) -->
-              <wd-icon :name="item.icon" size="20" />
-            </template>
-            <template v-if="item.iconType === 'unocss' || item.iconType === 'iconfont'">
-              <view :class="item.icon" class="text-20px" />
-            </template>
-            <template v-if="item.iconType === 'image'">
-              <image :src="getImageByIndex(index, item)" mode="scaleToFill" class="h-20px w-20px" />
-            </template>
-            <view class="mt-2px text-12px">
-              {{ item.text }}
-            </view>
-            <!-- 角标显示 -->
-            <view v-if="item.badge">
-              <template v-if="item.badge === 'dot'">
-                <view class="absolute right-0 top-0 h-2 w-2 rounded-full bg-#f56c6c" />
-              </template>
-              <template v-else>
-                <view class="absolute top-0 box-border h-5 min-w-5 center rounded-full bg-#f56c6c px-1 text-center text-xs text-white -right-3">
-                  {{ item.badge > 99 ? '99+' : item.badge }}
-                </view>
-              </template>
-            </view>
-          </view>
+  <view v-if="customTabbarEnable" class="fg-tabbar" @touchmove.stop.prevent>
+    <view class="fg-tabbar__container">
+      <view
+        v-for="(item, index) in tabbarList"
+        :key="index"
+        class="fg-tabbar__item"
+        :class="{ 'fg-tabbar__item--active': isActiveIndex(index) }"
+        @click="handleClick(index)"
+      >
+        <view class="fg-tabbar__icon-wrapper">
+          <template v-if="item.iconType === 'uiLib'">
+            <wd-icon
+              :name="item.icon"
+              size="28px"
+              :style="{ color: getIconColor(index) }"
+              custom-class="fg-tabbar__icon"
+            />
+          </template>
+          <template v-if="item.iconType === 'unocss' || item.iconType === 'iconfont'">
+            <view :class="item.icon" class="fg-tabbar__icon" :style="{ color: getIconColor(index) }" />
+          </template>
+          <template v-if="item.iconType === 'image'">
+            <image :src="getImageByIndex(index, item)" mode="scaleToFill" class="fg-tabbar__image" />
+          </template>
         </view>
       </view>
-
-      <view class="pb-safe" />
     </view>
   </view>
 </template>
 
 <style scoped lang="scss">
-.border-and-fixed {
+.fg-tabbar {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-
-  border-top: 1px solid #eee;
-  box-sizing: border-box;
+  left: 32rpx;
+  right: 32rpx;
+  bottom: calc(env(safe-area-inset-bottom) + 32rpx);
+  z-index: 999;
 }
-// 中间鼓包的样式
-.bulge {
-  position: absolute;
-  top: -20px;
-  left: 50%;
-  transform-origin: top center;
-  transform: translateX(-50%) scale(0.5) translateY(-33%);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 250rpx;
-  height: 250rpx;
-  border-radius: 50%;
-  background-color: #fff;
-  box-shadow: inset 0 0 0 1px #fefefe;
 
-  &:active {
-    // opacity: 0.8;
-  }
+.fg-tabbar__container {
+  position: relative;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 24rpx 40rpx;
+  border-radius: 48rpx;
+  background: #161823;
+  color: #fcfbfa;
+  box-shadow: 0 18rpx 36rpx rgba(22, 24, 35, 0.16);
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  overflow: visible;
+}
+
+.fg-tabbar__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fcfbfa;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.fg-tabbar__icon-wrapper {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fg-tabbar__item--active {
+  transform: scale(1.12);
+  color: #a0d4c4;
+}
+
+.fg-tabbar__icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.fg-tabbar__image {
+  width: 48rpx;
+  height: 48rpx;
 }
 </style>
