@@ -1,5 +1,5 @@
-import type { CommunityComment, CommunityDetail } from '@/pages/community/types'
-import { getCommunityDetailSource } from './social'
+import type { CommunityComment, CommunityDetail } from '@/api/types/community'
+import { getCommunityDetailSource } from '@/mock/mappers/community'
 
 const detailSource = getCommunityDetailSource()
 
@@ -62,3 +62,22 @@ export const communityCommentsMock: CommunityComment[] = [
     postedAt: '3小时前',
   },
 ]
+
+export function getCommunityDetailMock(id?: string): CommunityDetail {
+  const source = getCommunityDetailSource(id)
+  if (!source)
+    throw new Error('[communityDetailMock] 未找到社区详情数据')
+  return {
+    id: source.id,
+    title: source.title,
+    content: source.article,
+    postedAt: source.postedAt,
+    location: source.destination,
+    stats: source.stats,
+    media: source.media.slice(0, 4),
+    author: source.author,
+    isFollowing: source.isFollowing,
+    isLiked: source.isLiked,
+    isCollected: source.isCollected,
+  }
+}

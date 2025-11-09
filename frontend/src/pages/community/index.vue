@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import type { CommunityPost, CommunityTab } from './types'
+import type { CommunityPost, CommunityTab } from '@/api/types/community'
+import { onShow } from '@dcloudio/uni-app'
 import { computed, ref, watch } from 'vue'
+import LoginPrompt from '@/components/LoginPrompt.vue'
 import { useLoginGuard } from '@/hooks/useLoginGuard'
 import { communityPostsMock } from '@/mock/community'
+import { useUserStore } from '@/store'
+import { useLoginPromptStore } from '@/store/uiLoginPrompt'
+import { guardSelf } from '@/utils/selfGuard'
 import { safeAreaInsets } from '@/utils/systemInfo'
 
 defineOptions({
@@ -37,13 +42,26 @@ const basePosts = communityPostsMock.map(clonePost)
 const posts = ref<CommunityPost[]>([])
 const activeTab = ref<CommunityTab>('recommend')
 
-const filteredPosts = computed(() =>
-  posts.value.filter(item => item.tab === activeTab.value),
-)
+function getTimeValue(t: string) {
+  // 简易解析：支持 HH:mm 或 YYYY-MM-DD/时间字符串
+  if (/^\d{1,2}:\d{2}$/.test(t)) {
+    const [h, m] = t.split(':').map(Number)
+    return h * 60 + m
+  }
+  const d = new Date(t)
+  return Number.isNaN(d.getTime()) ? 0 : d.getTime()
+}
+
+const filteredPosts = computed(() => {
+  const list = posts.value.filter(item => item.tab === activeTab.value && (activeTab.value !== 'following' || item.isFollowing))
+  return list.slice().sort((a, b) => getTimeValue(b.postedAt) - getTimeValue(a.postedAt))
+})
 
 const pagePaddingTop = computed(() => `${(safeAreaInsets?.top || 0) + 24}px`)
 
 const { isLoggedIn, ensureLogin } = useLoginGuard()
+const loginPrompt = useLoginPromptStore()
+const viewerNickname = useUserStore().userInfo.nickname
 
 function rebuildPosts(loggedIn: boolean) {
   posts.value = basePosts.map((item) => {
@@ -56,6 +74,10 @@ function rebuildPosts(loggedIn: boolean) {
 watch(isLoggedIn, (loggedIn) => {
   rebuildPosts(loggedIn)
 }, { immediate: true })
+
+onShow(() => {
+  loginPrompt.close()
+})
 
 function handleCreatePost() {
   ensureLogin(() => {
@@ -74,6 +96,7 @@ function handleComment(item: CommunityPost) {
 
 function handleLike(item: CommunityPost) {
   ensureLogin(() => {
+    if (!guardSelf('like', item.author.name, viewerNickname)) return
     item.isLiked = !item.isLiked
     if (item.isLiked)
       item.stats.likes += 1
@@ -181,6 +204,7 @@ function formatStat(value: number) {
       <wd-icon name="add" size="40rpx" />
     </view>
   </view>
+  <LoginPrompt />
 </template>
 
 <style scoped lang="scss">

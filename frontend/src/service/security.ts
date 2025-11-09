@@ -1,6 +1,7 @@
-import { mockSendSecurityCode, mockUpdatePassword, mockUpdatePhone } from '@/mock/social'
+import { apiSendSecurityCode, apiUpdatePassword, apiUpdatePhone } from '@/api/security'
+import { mockSendSecurityCode, mockUpdatePassword, mockUpdatePhone } from '@/mock/security'
 
-export type SecurityScene = 'password' | 'phone'
+export type SecurityScene = 'login' | 'password' | 'phone'
 
 export interface SendSecurityCodeParams {
   phone: string
@@ -8,7 +9,7 @@ export interface SendSecurityCodeParams {
 }
 
 export interface SendSecurityCodeResult {
-  mockCode?: string
+  code?: string
 }
 
 export interface UpdatePasswordParams {
@@ -24,9 +25,10 @@ export interface UpdatePhoneParams {
 
 export async function sendSecurityCode(params: SendSecurityCodeParams): Promise<SendSecurityCodeResult> {
   if (import.meta.env.DEV)
-    return { mockCode: await mockSendSecurityCode(params) }
+    return { code: await mockSendSecurityCode(params) }
 
-  throw new Error('sendSecurityCode 接口未实现')
+  const res = await apiSendSecurityCode(params)
+  return { code: res.code }
 }
 
 export async function updatePassword(params: UpdatePasswordParams): Promise<void> {
@@ -35,7 +37,7 @@ export async function updatePassword(params: UpdatePasswordParams): Promise<void
     return
   }
 
-  throw new Error('updatePassword 接口未实现')
+  await apiUpdatePassword(params)
 }
 
 export async function updatePhone(params: UpdatePhoneParams): Promise<void> {
@@ -44,5 +46,5 @@ export async function updatePhone(params: UpdatePhoneParams): Promise<void> {
     return
   }
 
-  throw new Error('updatePhone 接口未实现')
+  await apiUpdatePhone(params)
 }

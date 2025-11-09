@@ -8,5 +8,6 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     FloatingBack: typeof import('./../components/common/FloatingBack.vue')['default']
+    LoginPrompt: typeof import('./../components/LoginPrompt.vue')['default']
   }
 }

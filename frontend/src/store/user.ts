@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import {
   getUserInfo,
 } from '@/api/login'
-import { mockFetchUserInfo } from '@/mock/social'
+import { mockFetchUserInfo } from '@/mock/auth'
 
 // 初始化状态
 const userInfoState: IUserInfoRes = {

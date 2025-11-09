@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import type { SwiperList } from 'wot-design-uni/components/wd-swiper/types'
-import type { HeroPackageMock } from '@/mock/home'
-import { onLoad } from '@dcloudio/uni-app'
+import type { ProductCard } from '@/api/types/product'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, ref, unref } from 'vue'
-import { destinationTabsMock, heroPackagesMock } from '@/mock/home'
+import LoginPrompt from '@/components/LoginPrompt.vue'
+import { useLoginGuard } from '@/hooks/useLoginGuard'
+import { destinationTabsMock, heroPackagesMock } from '@/mock/data/product'
+import { useUserStore } from '@/store'
+import { useLoginPromptStore } from '@/store/uiLoginPrompt'
 import { safeAreaInsets } from '@/utils/systemInfo'
 
 defineOptions({
@@ -18,13 +22,17 @@ definePage({
   },
 })
 
-const greeting = ref('秋尤妈姬')
+const { isLoggedIn, ensureLogin } = useLoginGuard()
+const loginPrompt = useLoginPromptStore()
+const userStore = useUserStore()
+const greeting = computed(() => (isLoggedIn.value ? (userStore.userInfo?.nickname?.trim() || 'traveler') : 'traveler'))
+const avatarUrl = computed(() => (isLoggedIn.value ? (userStore.userInfo?.avatar || '/static/images/default-avatar.png') : '/static/images/default-avatar.png'))
 const searchValue = ref('')
 
 const destinationTabs = ref(destinationTabsMock.map(tab => ({ ...tab })))
 const activeDestination = ref(destinationTabs.value[0]?.name ?? 'nearby')
 
-type HomeSwiperItem = HeroPackageMock & SwiperList
+type HomeSwiperItem = ProductCard & SwiperList
 
 const swiperList = ref<HomeSwiperItem[]>(heroPackagesMock.map(item => ({ ...item })))
 
@@ -61,6 +69,15 @@ function handleSeeMore() {
   })
 }
 
+function handleOpenProfile() {
+  if (isLoggedIn.value) {
+    uni.navigateTo({ url: '/pages/profile/index' })
+  }
+  else {
+    ensureLogin()
+  }
+}
+
 function handleSwiperChange({ current }: { current: number }) {
   swiperCurrent.value = current
 }
@@ -86,6 +103,10 @@ function handleToggleFavorite(itemId: string) {
 onLoad(() => {
   // 预留：可在此拉取用户称谓等信息
 })
+
+onShow(() => {
+  loginPrompt.close()
+})
 </script>
 
 <template>
@@ -95,8 +116,8 @@ onLoad(() => {
         <text class="home__greeting-title">Hello {{ greeting }}</text>
         <text class="home__greeting-sub">welcome to trip</text>
       </view>
-      <view class="home__avatar">
-        <wd-icon name="user" size="28px" />
+      <view class="home__avatar" @click="handleOpenProfile">
+        <image :src="avatarUrl" mode="aspectFill" class="home__avatar-img" />
       </view>
     </view>
 
@@ -211,6 +232,7 @@ onLoad(() => {
       </wd-button>
     </view>
   </view>
+  <LoginPrompt />
 </template>
 
 <style scoped lang="scss">
@@ -251,6 +273,12 @@ onLoad(() => {
   align-items: center;
   justify-content: center;
   color: #325947;
+}
+
+.home__avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
 }
 
 .home__search {

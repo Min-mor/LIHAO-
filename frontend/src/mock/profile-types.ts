@@ -10,7 +10,6 @@ export interface ProfileStat {
 
 export interface FootprintItem {
   id: string
-  icon: 'location'
   date: string
   destination: string
   title: string
@@ -23,7 +22,6 @@ export interface FootprintItem {
 
 export interface TopicItem {
   id: string
-  icon: 'chat1'
   date: string
   content: string
   location?: string
@@ -38,7 +36,6 @@ export type OrderStatus = '已完成' | '进行中' | '待付款' | '已退款' 
 
 export interface OrderItem {
   id: string
-  icon: 'calendar'
   orderType: OrderType
   status: OrderStatus
   date: string

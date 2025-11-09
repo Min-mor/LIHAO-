@@ -1,6 +1,7 @@
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useTokenStore } from '@/store/token'
+import { useLoginPromptStore } from '@/store/uiLoginPrompt'
 
 export interface LoginGuardOptions {
   title?: string
@@ -25,33 +26,13 @@ export function useLoginGuard(initialOptions?: LoginGuardOptions) {
 
   const tokenStore = useTokenStore()
   const { hasLogin } = storeToRefs(tokenStore)
+  const loginPrompt = useLoginPromptStore()
 
   const isLoggedIn = computed(() => hasLogin.value)
 
   function promptLogin(overrides?: LoginGuardOptions) {
     const finalOptions = { ...options.value, ...overrides }
-
-    uni.showModal({
-      title: finalOptions.title || DEFAULT_OPTIONS.title,
-      content: finalOptions.message || DEFAULT_OPTIONS.message,
-      confirmText: finalOptions.confirmText || DEFAULT_OPTIONS.confirmText,
-      cancelText: finalOptions.cancelText || DEFAULT_OPTIONS.cancelText,
-      success(res) {
-        if (res.confirm) {
-          if (finalOptions.onConfirm) {
-            finalOptions.onConfirm()
-            return
-          }
-
-          const target = finalOptions.loginPath || DEFAULT_OPTIONS.loginPath
-          if (target)
-            uni.navigateTo({ url: target })
-        }
-        else {
-          finalOptions.onCancel?.()
-        }
-      },
-    })
+    loginPrompt.open(finalOptions)
   }
 
   function ensureLogin(action?: () => void, overrides?: LoginGuardOptions) {

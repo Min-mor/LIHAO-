@@ -16,6 +16,7 @@ export interface CommunityMedia {
 
 export interface CommunityStats {
   share: number
+  collects: number
   comments: number
   likes: number
 }
@@ -31,6 +32,7 @@ export interface CommunityPost {
   stats: CommunityStats
   isFollowing: boolean
   isLiked: boolean
+  self?: boolean
 }
 
 export interface CommunityDetail {
@@ -39,11 +41,7 @@ export interface CommunityDetail {
   content: string
   postedAt: string
   location?: string
-  stats: {
-    likes: number
-    collects: number
-    comments: number
-  }
+  stats: CommunityStats
   media: string[]
   author: CommunityAuthor
   isFollowing: boolean

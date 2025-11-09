@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import type { CommunityAuthor, CommunityComment, CommunityDetail } from '../community/types'
-import { onLoad } from '@dcloudio/uni-app'
+import type { CommunityAuthor, CommunityComment, CommunityDetail } from '@/api/types/community'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, nextTick, reactive, ref, watch } from 'vue'
+import LoginPrompt from '@/components/LoginPrompt.vue'
 import { useLoginGuard } from '@/hooks/useLoginGuard'
-import { communityCommentsMock, communityDetailMock } from '@/mock/communityDetail'
+import { getCommunityDetail, listCommunityComments } from '@/service/community'
+import { useUserStore } from '@/store'
+import { useLoginPromptStore } from '@/store/uiLoginPrompt'
+import { guardSelf } from '@/utils/selfGuard'
 import { safeAreaInsets } from '@/utils/systemInfo'
 
 definePage({
@@ -50,9 +54,16 @@ interface ReplyContext {
 }
 
 const { isLoggedIn, ensureLogin } = useLoginGuard()
+const loginPrompt = useLoginPromptStore()
+const viewerNickname = useUserStore().userInfo.nickname
 
-function createDetail(loggedIn: boolean): CommunityDetail {
-  const cloned = cloneDetail(communityDetailMock)
+onShow(() => {
+  // 防止从其它页面遗留的登录弹窗在进入详情页时自动显示
+  loginPrompt.close()
+})
+
+function createDetail(loggedIn: boolean, base: CommunityDetail): CommunityDetail {
+  const cloned = cloneDetail(base)
   if (!loggedIn) {
     cloned.isLiked = false
     cloned.isFollowing = false
@@ -61,8 +72,19 @@ function createDetail(loggedIn: boolean): CommunityDetail {
   return cloned
 }
 
-const detail = reactive<CommunityDetail>(createDetail(isLoggedIn.value))
-const comments = ref<CommunityComment[]>(cloneComments(communityCommentsMock))
+const detail = reactive<CommunityDetail>({
+  id: '',
+  title: '',
+  content: '',
+  postedAt: '',
+  stats: { share: 0, collects: 0, comments: 0, likes: 0 },
+  media: [],
+  author: { name: '', avatar: '' },
+  isFollowing: false,
+  isLiked: false,
+  isCollected: false,
+})
+const comments = ref<CommunityComment[]>([])
 const showActionSheet = ref(false)
 const activeCommentId = ref<string | null>(null)
 const currentSlide = ref(0)
@@ -83,7 +105,7 @@ const commentFieldFocus = ref(false)
 
 const viewerProfile: CommunityAuthor = {
   name: '我',
-  avatar: communityCommentsMock[0]?.author.avatar || communityDetailMock.author.avatar,
+  avatar: '',
 }
 
 const followBtnBaseStyle = [
@@ -125,33 +147,39 @@ function handleShare() {
   uni.showShareMenu()
 }
 
-onLoad((query) => {
-  const likes = Number(query?.likes ?? communityDetailMock.stats.likes)
-  const commentsCount = Number(query?.comments ?? communityDetailMock.stats.comments)
-  const collects = Number(query?.collects ?? communityDetailMock.stats.collects)
+onLoad(async (query) => {
+  const queryId = (query?.id as string) || ''
+  const fetched = await getCommunityDetail(queryId)
+  const likes = Number(query?.likes ?? fetched.stats.likes)
+  const commentsCount = Number(query?.comments ?? fetched.stats.comments)
+  const collects = Number(query?.collects ?? fetched.stats.collects)
 
-  const baseDetail = createDetail(isLoggedIn.value)
+  const baseDetail = createDetail(isLoggedIn.value, fetched)
 
   Object.assign(detail, baseDetail, {
-    id: (query?.id as string) || communityDetailMock.id,
+    id: queryId || fetched.id,
     stats: {
-      likes: Number.isNaN(likes) ? communityDetailMock.stats.likes : likes,
-      comments: Number.isNaN(commentsCount) ? communityDetailMock.stats.comments : commentsCount,
-      collects: Number.isNaN(collects) ? communityDetailMock.stats.collects : collects,
+      share: baseDetail.stats.share ?? 0,
+      likes: Number.isNaN(likes) ? fetched.stats.likes : likes,
+      comments: Number.isNaN(commentsCount) ? fetched.stats.comments : commentsCount,
+      collects: Number.isNaN(collects) ? fetched.stats.collects : collects,
     },
   })
 
-  comments.value = cloneComments(communityCommentsMock)
+  viewerProfile.avatar = detail.author.avatar
+
+  const list = await listCommunityComments(detail.id)
+  comments.value = cloneComments(list)
   detail.stats.comments = computeCommentCount(comments.value)
   currentSlide.value = 0
 })
 
 watch(isLoggedIn, (loggedIn) => {
-  const snapshot = createDetail(loggedIn)
-  snapshot.id = detail.id
-  snapshot.stats = { ...detail.stats }
-  snapshot.media = [...detail.media]
-  Object.assign(detail, snapshot)
+  if (!loggedIn) {
+    detail.isLiked = false
+    detail.isFollowing = false
+    detail.isCollected = false
+  }
 })
 
 function sortCommentList(list: CommunityComment[] = []) {
@@ -214,12 +242,14 @@ function parsePostedAtTimestamp(value?: string): number {
 
 function toggleFollow() {
   ensureLogin(() => {
+    if (!guardSelf('follow', detail.author.name, viewerNickname)) return
     detail.isFollowing = !detail.isFollowing
   })
 }
 
 function toggleLike() {
   ensureLogin(() => {
+    if (!guardSelf('like', detail.author.name, viewerNickname)) return
     detail.isLiked = !detail.isLiked
     if (detail.isLiked)
       detail.stats.likes += 1
@@ -230,6 +260,7 @@ function toggleLike() {
 
 function toggleCollect() {
   ensureLogin(() => {
+    if (!guardSelf('collect', detail.author.name, viewerNickname)) return
     detail.isCollected = !detail.isCollected
     if (detail.isCollected)
       detail.stats.collects += 1
@@ -601,6 +632,7 @@ function cancelReplyContext(force = false) {
       :actions="[{ name: '复制评论' }, { name: '举报', color: 'var(--color-brand-primary)' }]"
     />
   </view>
+  <LoginPrompt />
 </template>
 
 <style scoped lang="scss">

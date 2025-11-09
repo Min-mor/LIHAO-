@@ -35,8 +35,8 @@ const pagePaddingTop = computed(() => `${(safeAreaInsets?.top || 0) + 24}px`)
 const pagePaddingBottom = computed(() => '32rpx')
 const hasLogin = computed(() => tokenStore.hasLogin)
 const signatureText = computed(() => {
-  const info = userInfo.value as { signature?: string, bio?: string } | undefined
-  return info?.signature || info?.bio || '尽忠职守 · 敏钟就走'
+  const info = userInfo.value as { signature?: string } | undefined
+  return info?.signature || '该用户太谦虚了还没有写东西'
 })
 
 const profileTabs = [
@@ -57,7 +57,7 @@ const orderList = ref<OrderItem[]>([])
 const favoriteList = ref<ProfileFavorites>({ sights: [], footprints: [] })
 const favoriteTabs = [
   { label: '景点', value: 'sights' as const },
-  { label: '足迹', value: 'footprints' as const },
+  { label: '文章', value: 'footprints' as const },
 ]
 const favoriteCategory = ref<typeof favoriteTabs[number]['value']>('sights')
 const favoriteCounts = computed<Record<typeof favoriteTabs[number]['value'], number>>(() => ({
@@ -283,11 +283,11 @@ function handleFavoriteSwitch(category: typeof favoriteTabs[number]['value']) {
 }
 
 function handleOpenFootprint(item: FootprintItem) {
-  uni.navigateTo({ url: `/pages/footprint/detail?id=${item.id}` })
+  uni.navigateTo({ url: `/pages/community-detail/index?id=${item.id}` })
 }
 
 function handleOpenTopic(item: TopicItem) {
-  uni.navigateTo({ url: `/pages/topic/detail?id=${item.id}` })
+  uni.navigateTo({ url: `/pages/community-detail/index?id=${item.id}` })
 }
 
 function handleCreateTopic() {
@@ -303,7 +303,13 @@ function handleViewOrder(order: OrderItem) {
 }
 
 function handleFavoriteDetail(item: FavoriteCard) {
-  uni.navigateTo({ url: `/pages/favorite/detail?id=${item.id}&type=${favoriteCategory.value}` })
+  if (favoriteCategory.value === 'footprints') {
+    const sourceId = item.id.replace(/^fav-/, '')
+    uni.navigateTo({ url: `/pages/community-detail/index?id=${sourceId}` })
+  }
+  else {
+    uni.navigateTo({ url: '/pages/product/index' })
+  }
 }
 </script>
 

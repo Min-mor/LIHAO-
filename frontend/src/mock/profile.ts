@@ -1,4 +1,4 @@
-import { getProfileMockData as getProfileMockDataImpl } from './social'
+import { getProfileMockData as getProfileMockDataImpl } from '@/mock/mappers/profile'
 
 export * from './profile-types'
 

@@ -18,7 +18,8 @@ type _LocationUrl =
   "/pages/settings/index" |
   "/pages/traffic/index" |
   "/pages/trip/index" |
-  "/pages/settings/security/index";
+  "/pages/settings/security/index" |
+  "/pages-fg/404/index";
 
 interface NavigateToOptions {
   url: _LocationUrl;

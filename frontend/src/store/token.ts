@@ -12,7 +12,7 @@ import {
   getWxCode,
 } from '@/api/login'
 import { isDoubleTokenRes, isSingleTokenRes } from '@/api/types/login'
-import { mockLoginByPhone, resetActiveUser } from '@/mock/social'
+import { mockLoginByPhone, resetActiveUser } from '@/mock/auth'
 import { isDoubleTokenMode } from '@/utils'
 import { useUserStore } from './user'
 

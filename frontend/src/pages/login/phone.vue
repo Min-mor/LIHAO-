@@ -5,6 +5,8 @@ import { useToast } from 'wot-design-uni'
 import { useTokenStore } from '@/store/token'
 import { isPageTabbar, tabbarStore } from '@/tabbar/store'
 import { ensureDecodeURIComponent, HOME_PAGE } from '@/utils'
+import { useSmsCode } from '@/hooks/useSmsCode'
+import { sendSecurityCode } from '@/service/security'
 
 defineOptions({
   name: 'LoginPhonePage',
@@ -26,16 +28,20 @@ const form = reactive({
 
 const loginMode = ref<'sms' | 'password'>('sms')
 
-const countdown = ref(0)
-const sending = ref(false)
-const hasRequestedCode = ref(false)
-const showPassword = ref(false)
-const redirectUrl = ref<string | null>(null)
-const lastSmsCode = ref('')
-let timer: ReturnType<typeof setInterval> | null = null
-
 const { info: showInfo } = useToast()
 const tokenStore = useTokenStore()
+
+const showPassword = ref(false)
+const redirectUrl = ref<string | null>(null)
+
+const sms = useSmsCode({
+  phoneGetter: () => cleanedPhone.value,
+  async sendCode(phone) {
+    const res = await sendSecurityCode({ phone, scene: 'login' })
+    return { code: res.code }
+  },
+  onInvalidPhone: () => showInfo({ msg: '请输入正确手机号' }),
+})
 
 const isSmsMode = computed(() => loginMode.value === 'sms')
 const formattedPhone = computed({
@@ -48,17 +54,17 @@ const formattedPhone = computed({
 })
 
 const cleanedPhone = computed(() => form.phone.replace(/\s/g, ''))
-const showCodeField = computed(() => isSmsMode.value && hasRequestedCode.value)
+const showCodeField = computed(() => isSmsMode.value && sms.hasRequested.value)
 const canSendCode = computed(
-  () => isSmsMode.value && hasRequestedCode.value && validatePhone(cleanedPhone.value) && countdown.value === 0 && !sending.value,
+  () => isSmsMode.value && sms.hasRequested.value && validatePhone(cleanedPhone.value) && sms.countdown.value === 0 && !sms.sending.value,
 )
-const sendButtonLabel = computed(() => (countdown.value > 0 ? `重新发送 ${countdown.value}s` : '重新发送'))
+const sendButtonLabel = computed(() => (sms.countdown.value > 0 ? `重新发送 ${sms.countdown.value}s` : '重新发送'))
 const submitDisabled = computed(() => {
   if (!validatePhone(cleanedPhone.value)) {
     return true
   }
   if (isSmsMode.value) {
-    return hasRequestedCode.value && !form.code
+    return sms.hasRequested.value && !form.code
   }
   return !form.password
 })
@@ -68,64 +74,40 @@ function validatePhone(phone: string) {
   return /^\d{11}$/.test(phone.trim())
 }
 
-function clearTimer() {
-  if (timer) {
-    clearInterval(timer)
-    timer = null
-  }
-}
+function clearTimer() {}
 
 function resetCodeState() {
-  clearTimer()
-  countdown.value = 0
-  hasRequestedCode.value = false
+  sms.reset()
   showPassword.value = false
   form.code = ''
-  lastSmsCode.value = ''
 }
 
-function startCountdown(seconds = 60) {
-  clearTimer()
-  countdown.value = seconds
-  timer = setInterval(() => {
-    if (countdown.value <= 1) {
-      clearTimer()
-      countdown.value = 0
-      return
-    }
-    countdown.value -= 1
-  }, 1000)
-}
+function startCountdown(seconds = 60) {}
 
 async function requestSmsCode() {
   if (!validatePhone(cleanedPhone.value)) {
     showInfo({ msg: '请输入正确手机号' })
     return false
   }
-  hasRequestedCode.value = true
-  if (sending.value || countdown.value > 0) {
-    return false
-  }
-  try {
-    sending.value = true
-    lastSmsCode.value = generateMockCode()
-    await mockSendCode()
-    startCountdown(60)
+  const ok = await sms.request()
+  if (ok) {
     form.code = ''
-    showInfo({ msg: `验证码已发送（mock：${lastSmsCode.value}）` })
+    if (sms.lastCode.value)
+      console.debug('[mock-sms] login code:', sms.lastCode.value)
+    showInfo({ msg: sms.lastCode.value ? `验证码已发送（mock：${sms.lastCode.value}）` : '验证码已发送' })
     return true
   }
-  finally {
-    sending.value = false
-  }
+  return false
 }
 
 async function handleSendCode() {
-  if (!isSmsMode.value || !hasRequestedCode.value || countdown.value > 0 || sending.value) {
+  if (!isSmsMode.value || !sms.hasRequested.value || sms.countdown.value > 0 || sms.sending.value) {
     return
   }
   if (await requestSmsCode()) {
-    showInfo({ msg: `验证码已重新发送（mock：${lastSmsCode.value}）` })
+    showInfo({ msg: sms.lastCode.value ? `验证码已重新发送（mock：${sms.lastCode.value}）` : '验证码已重新发送' })
+    if (sms.lastCode.value)
+      console.debug('[mock-sms] login code (resend):', sms.lastCode.value)
   }
 }
 
@@ -135,7 +117,7 @@ async function handleSubmit() {
     return
   }
   if (isSmsMode.value) {
-    if (!hasRequestedCode.value || countdown.value === 0) {
+    if (!sms.hasRequested.value || sms.countdown.value === 0) {
       const sent = await requestSmsCode()
       if (sent) {
         return
@@ -145,11 +127,11 @@ async function handleSubmit() {
       showInfo({ msg: '请输入验证码' })
       return
     }
-    if (!lastSmsCode.value) {
+    if (!sms.lastCode.value) {
       showInfo({ msg: '请先获取验证码' })
       return
     }
-    if (form.code !== lastSmsCode.value) {
+    if (form.code !== sms.lastCode.value) {
       showInfo({ msg: '验证码不正确' })
       return
     }
@@ -196,15 +178,8 @@ function toggleLoginMode() {
   resetCodeState()
 }
 
-function mockSendCode() {
-  return new Promise((resolve) => {
-    setTimeout(resolve, 500)
-  })
-}
-
-function generateMockCode() {
-  return Math.floor(100000 + Math.random() * 900000).toString()
-}
+function mockSendCode() { return Promise.resolve() }
+function generateMockCode() { return '' }
 
 function navigateAfterLogin() {
   const target = redirectUrl.value || HOME_PAGE
@@ -256,7 +231,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  clearTimer()
+  sms.dispose()
 })
 </script>
 
