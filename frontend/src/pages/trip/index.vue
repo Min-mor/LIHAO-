@@ -198,7 +198,6 @@ $trip-status-completed-bg: rgba($color-base-border, 0.12);
   padding: 32rpx;
   border-radius: 32rpx;
   background: $trip-card-bg;
-  box-shadow: 0 20rpx 46rpx $trip-shadow;
   margin-bottom: 28rpx;
 }
 

@@ -16,6 +16,9 @@ type _LocationUrl =
   "/pages/profile-edit/index" |
   "/pages/romantic/index" |
   "/pages/settings/index" |
+  "/pages/ticket/choose" |
+  "/pages/ticket/list" |
+  "/pages/ticket/submit" |
   "/pages/traffic/index" |
   "/pages/trip/index" |
   "/pages/settings/security/index" |

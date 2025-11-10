@@ -38,10 +38,10 @@ const swiperList = ref<HomeSwiperItem[]>(heroPackagesMock.map(item => ({ ...item
 
 const headerPaddingOffset = typeof uni !== 'undefined' && uni.upx2px ? uni.upx2px(32) : 32
 const homePaddingTop = computed(() => `${(safeAreaInsets?.top || 0) + headerPaddingOffset}px`)
-const toolButtonStyle = 'border-radius:999rpx;padding:36rpx 0;background:#325947!important;color:#f5f2ea!important;min-width:auto;display:inline-flex;align-items:center;justify-content:center;'
-const seeMoreButtonStyle = 'border-radius:999rpx;padding:18rpx 36rpx;background:#325947!important;color:#f5f2ea!important;min-width:220rpx;max-width:360rpx;display:flex;align-items:center;justify-content:center;width:auto;margin:24rpx auto 0;'
-const filterNormalStyle = '--wot-button-info-bg-color:rgba(22,24,35,0.06);--wot-button-info-color:#161823;--wot-button-info-border-radius:999rpx;--wot-button-info-padding-y:14rpx;--wot-button-info-padding-x:36rpx;'
-const filterActiveStyle = '--wot-button-info-bg-color:#161823;--wot-button-info-color:#fcfbfa;--wot-button-info-border-radius:999rpx;--wot-button-info-padding-y:14rpx;--wot-button-info-padding-x:36rpx;'
+const toolButtonStyle = 'border-radius:999rpx;padding:36rpx 0;background:var(--color-brand-primary)!important;color:var(--color-text-inverse)!important;min-width:auto;display:inline-flex;align-items:center;justify-content:center;'
+const seeMoreButtonStyle = 'border-radius:999rpx;padding:18rpx 36rpx;background:var(--color-brand-primary)!important;color:var(--color-text-inverse)!important;min-width:220rpx;max-width:360rpx;display:flex;align-items:center;justify-content:center;width:auto;margin:24rpx auto 0;'
+const filterNormalStyle = '--wot-button-info-bg-color:rgba(var(--color-text-primary-rgb),0.06);--wot-button-info-color:var(--color-text-primary);--wot-button-info-border-radius:999rpx;--wot-button-info-padding-y:14rpx;--wot-button-info-padding-x:36rpx;'
+const filterActiveStyle = '--wot-button-info-bg-color:var(--color-text-primary);--wot-button-info-color:var(--color-bg-primary);--wot-button-info-border-radius:999rpx;--wot-button-info-padding-y:14rpx;--wot-button-info-padding-x:36rpx;'
 
 const swiperCurrent = ref(0)
 
@@ -122,12 +122,7 @@ onShow(() => {
     </view>
 
     <view class="home__search">
-      <wd-input
-        v-model="searchValue"
-        prefix-icon="search"
-        placeholder="Search"
-        clearable
-      />
+      <wd-search v-model="searchValue" placeholder="Search" hide-cancel custom-style="background-color: transparent !important;" />
     </view>
 
     <view class="home__section">
@@ -242,8 +237,8 @@ onShow(() => {
   flex-direction: column;
   gap: 32rpx;
   padding: 32rpx 32rpx 160rpx;
-  background: #fcfbfa;
-  color: #161823;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 .home__header {
@@ -261,18 +256,18 @@ onShow(() => {
   display: block;
   margin-top: 8rpx;
   font-size: 26rpx;
-  color: #2b2b2b;
+  color: var(--color-text-secondary);
 }
 
 .home__avatar {
   width: 96rpx;
   height: 96rpx;
   border-radius: 50%;
-  background: rgba(160, 212, 196, 0.15);
+  background: var(--color-brand-soft);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #325947;
+  color: var(--color-brand-primary);
 }
 
 .home__avatar-img {
@@ -283,46 +278,6 @@ onShow(() => {
 
 .home__search {
   width: 100%;
-  :deep(.wd-input) {
-    --wot-input-border-width: 0;
-    --wot-input-border-radius: 44rpx;
-    --wot-input-padding-y: 8rpx;
-    --wot-input-padding-x: 56rpx;
-    --wot-input-font-size: 30rpx;
-    --wot-input-height: 60rpx;
-    --wot-input-background-color: #ffffff;
-    background: #f7f4ec;
-    border-radius: 44rpx;
-    overflow: hidden;
-    box-shadow: none;
-  }
-  :deep(.wd-input__wrapper) {
-    border-radius: 44rpx;
-    background: #ffffff;
-    padding: 0;
-  }
-  :deep(.wd-input__value) {
-    padding: 0 32rpx 0 48rpx;
-  }
-  :deep(.wd-input__value)::after {
-    display: none;
-  }
-  :deep(.wd-input__prefix) {
-    margin-right: 20rpx;
-    background: transparent;
-    padding: 0;
-  }
-  :deep(.wd-input__prefix .wd-icon) {
-    background: transparent !important;
-  }
-  :deep(.wd-input__clear) {
-    background: transparent !important;
-    color: #325947;
-  }
-  :deep(.wd-input__inner) {
-    height: 60rpx;
-    line-height: 60rpx;
-  }
 }
 
 .home__section {
@@ -368,7 +323,7 @@ onShow(() => {
   position: relative;
   width: 100%;
   border-radius: 36rpx;
-  background: #f8f5ee;
+  background: var(--color-surface);
   box-shadow: none;
   transition:
     transform 0.3s ease,
@@ -418,8 +373,8 @@ onShow(() => {
 
 .home__swiper-score {
   padding: 8rpx 20rpx;
-  background: rgba(22, 24, 35, 0.08) !important;
-  color: #161823 !important;
+  background: rgba(var(--color-text-primary-rgb), 0.08) !important;
+  color: var(--color-text-primary) !important;
   font-size: 24rpx;
 }
 
@@ -430,14 +385,14 @@ onShow(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #325947;
+  color: var(--color-brand-primary);
   background: transparent;
   border: none;
 }
 
 .home__swiper-summary {
   font-size: 26rpx;
-  color: #2b2b2b;
+  color: var(--color-text-secondary);
   text-align: left;
 }
 
@@ -448,8 +403,8 @@ onShow(() => {
 }
 
 .home__swiper-tag {
-  background: rgba(22, 24, 35, 0.08) !important;
-  color: #161823 !important;
+  background: rgba(var(--color-text-primary-rgb), 0.08) !important;
+  color: var(--color-text-primary) !important;
   border-radius: 999rpx !important;
   font-size: 22rpx !important;
   padding: 6rpx 16rpx !important;
@@ -466,14 +421,14 @@ onShow(() => {
   width: 16rpx;
   height: 16rpx;
   border-radius: 50%;
-  background: rgba(22, 24, 35, 0.16);
+  background: rgba(var(--color-text-primary-rgb), 0.16);
   transition:
     transform 0.3s ease,
     background 0.3s ease;
 }
 
 .home__swiper-dot--active {
-  background: #325947;
+  background: var(--color-brand-primary);
   transform: scale(1.2);
 }
 
@@ -482,6 +437,6 @@ onShow(() => {
   --wot-button-border-width: 0;
   --wot-button-border-radius: 999rpx;
   --wot-button-font-size: 30rpx;
-  background: #f8f5ee;
+  background: var(--color-surface);
 }
 </style>

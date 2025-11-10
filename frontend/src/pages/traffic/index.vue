@@ -3,6 +3,7 @@ import type { ComputedRef } from 'vue'
 import type { ConfigProviderThemeVars } from 'wot-design-uni'
 import { computed, reactive, ref } from 'vue'
 import FloatingBack from '@/components/common/FloatingBack.vue'
+import { useTicketStore } from '@/store/ticket'
 import { safeAreaInsets } from '@/utils/systemInfo'
 
 defineOptions({
@@ -159,7 +160,16 @@ function handleCalendarConfirm({ value }: { value: number }) {
 }
 
 function handleQuery() {
-  uni.showToast({ title: '查询功能待接入', icon: 'none' })
+  const ticket = useTicketStore()
+  ticket.setSearch({
+    mode: state.activeTab as 'train' | 'flight',
+    from: state.fromCity,
+    to: state.toCity,
+    date: departDateValue.value,
+    options: isTrainTab.value ? ticketChecks.value : [],
+    directOnly: false,
+  })
+  uni.navigateTo({ url: '/pages/ticket/list' })
 }
 </script>
 
