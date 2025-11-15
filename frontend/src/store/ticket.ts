@@ -1,6 +1,7 @@
 import type { FareOption, OrderDraft, SearchContext, Trip } from '@/types/ticket'
 import { defineStore } from 'pinia'
 import { searchTrips } from '@/api/ticket'
+import { useUserStore } from '@/store/user'
 
 export const useTicketStore = defineStore('ticket', {
   state: () => ({
@@ -17,11 +18,19 @@ export const useTicketStore = defineStore('ticket', {
     loading: false,
     selectedTrip: null as Trip | null,
     selectedFareId: '' as string,
-    passengers: [] as { id: string; name: string; type: 'adult' | 'child' | 'student'; idNo?: string }[],
+    passengers: [] as { id: string; name: string; type: 'adult' | 'child' | 'student'; idNo?: string; idType?: string; phone?: string }[],
+    savedPassengers: [] as { id: string; userId: number; name: string; type: 'adult' | 'child' | 'student'; idNo?: string; idType?: string; phone?: string }[],
     contactPhone: '',
   }),
   persist: true,
   getters: {
+    savedPassengersForCurrentUser(state): { id: string; userId: number; name: string; type: 'adult' | 'child' | 'student'; idNo?: string; idType?: string; phone?: string }[] {
+      const userStore = useUserStore()
+      const currentUserId = userStore.userInfo?.userId
+      if (!currentUserId || currentUserId === -1)
+        return []
+      return state.savedPassengers.filter(p => p.userId === currentUserId)
+    },
     selectedFare(state): FareOption | undefined {
       return state.selectedTrip?.fares.find(f => f.id === state.selectedFareId)
     },
@@ -53,7 +62,8 @@ export const useTicketStore = defineStore('ticket', {
       this.loading = true
       try {
         this.results = await searchTrips(this.search)
-      } finally {
+      }
+      finally {
         this.loading = false
       }
     },
@@ -66,6 +76,20 @@ export const useTicketStore = defineStore('ticket', {
     },
     setPassengers(list: { id: string; name: string; type: 'adult' | 'child' | 'student'; idNo?: string }[]) {
       this.passengers = list
+    },
+    addSavedPassenger(p: { id?: string; name: string; type: 'adult' | 'child' | 'student'; idNo?: string; idType?: string; phone?: string }) {
+      const userStore = useUserStore()
+      const userId = userStore.userInfo?.userId || -1
+      const id = p.id || `sp_${Date.now()}`
+      const item = { id, userId, name: p.name, type: p.type, idNo: p.idNo, idType: p.idType, phone: p.phone }
+      this.savedPassengers = [...this.savedPassengers.filter(x => x.id !== id), item]
+      return id
+    },
+    updateSavedPassenger(p: { id: string; name?: string; type?: 'adult' | 'child' | 'student'; idNo?: string; idType?: string; phone?: string }) {
+      this.savedPassengers = this.savedPassengers.map(x => x.id === p.id ? { ...x, ...p } : x)
+    },
+    removeSavedPassenger(id: string) {
+      this.savedPassengers = this.savedPassengers.filter(x => x.id !== id)
     },
     setContactPhone(v: string) {
       this.contactPhone = v

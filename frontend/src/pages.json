@@ -189,6 +189,20 @@
       "style": {
         "navigationStyle": "custom"
       }
+    },
+    {
+      "path": "pages/ticket/passenger/add",
+      "type": "page",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/ticket/passenger/select",
+      "type": "page",
+      "style": {
+        "navigationStyle": "custom"
+      }
     }
   ],
   "subPackages": [

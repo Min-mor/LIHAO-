@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import type { ComputedRef } from 'vue'
 import type { ConfigProviderThemeVars } from 'wot-design-uni'
+import { onShow } from '@dcloudio/uni-app'
 import { computed, reactive, ref } from 'vue'
 import FloatingBack from '@/components/common/FloatingBack.vue'
+import LoginPrompt from '@/components/LoginPrompt.vue'
+import { useLoginGuard } from '@/hooks/useLoginGuard'
 import { useTicketStore } from '@/store/ticket'
+import { useLoginPromptStore } from '@/store/uiLoginPrompt'
 import { safeAreaInsets } from '@/utils/systemInfo'
 
 defineOptions({
@@ -16,6 +20,9 @@ definePage({
     navigationBarTitleText: '交通工具',
   },
 })
+
+const loginPrompt = useLoginPromptStore()
+const { ensureLogin } = useLoginGuard()
 
 interface PassengerOption {
   label: string
@@ -160,23 +167,32 @@ function handleCalendarConfirm({ value }: { value: number }) {
 }
 
 function handleQuery() {
-  const ticket = useTicketStore()
-  ticket.setSearch({
-    mode: state.activeTab as 'train' | 'flight',
-    from: state.fromCity,
-    to: state.toCity,
-    date: departDateValue.value,
-    options: isTrainTab.value ? ticketChecks.value : [],
-    directOnly: false,
+  ensureLogin(() => {
+    const ticket = useTicketStore()
+    ticket.setSearch({
+      mode: state.activeTab as 'train' | 'flight',
+      from: state.fromCity,
+      to: state.toCity,
+      date: departDateValue.value,
+      options: isTrainTab.value ? ticketChecks.value : [],
+      directOnly: false,
+    })
+    uni.navigateTo({ url: '/pages/ticket/list' })
+  }, {
+    message: '查询车票需要登录',
   })
-  uni.navigateTo({ url: '/pages/ticket/list' })
 }
+
+onShow(() => {
+  loginPrompt.close()
+})
 </script>
 
 <template>
   <wd-config-provider :theme-vars="calendarThemeVars">
     <view class="traffic" :style="{ paddingTop: `${safeTop}px` }">
       <floating-back />
+      <LoginPrompt />
 
       <view class="traffic__body" :style="{ paddingTop: contentPaddingTop }">
         <view class="traffic__tabs">

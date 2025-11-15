@@ -22,6 +22,8 @@ type _LocationUrl =
   "/pages/traffic/index" |
   "/pages/trip/index" |
   "/pages/settings/security/index" |
+  "/pages/ticket/passenger/add" |
+  "/pages/ticket/passenger/select" |
   "/pages-fg/404/index";
 
 interface NavigateToOptions {

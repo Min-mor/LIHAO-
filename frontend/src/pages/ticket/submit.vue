@@ -6,6 +6,7 @@ import LoginPrompt from '@/components/LoginPrompt.vue'
 import { useLoginGuard } from '@/hooks/useLoginGuard'
 import { useTicketStore } from '@/store/ticket'
 import { useLoginPromptStore } from '@/store/uiLoginPrompt'
+import { useUserStore } from '@/store/user'
 
 defineOptions({ name: 'TicketSubmitPage' })
 
@@ -13,10 +14,11 @@ definePage({ style: { navigationStyle: 'custom', navigationBarTitleText: '提交
 
 const loginPrompt = useLoginPromptStore()
 const { ensureLogin } = useLoginGuard()
+const userStore = useUserStore()
 const store = useTicketStore()
 
 const draft = computed(() => store.orderDraft)
-const phone = ref(store.contactPhone)
+const phone = ref((userStore.userInfo as any)?.phone || store.contactPhone || '')
 const dateLabel = computed(() => {
   const d = new Date(store.search.date)
   return `${d.getMonth() + 1}月${d.getDate()}日`
@@ -34,16 +36,15 @@ const selectedFare = computed(() => {
   return fares.find(f => f.id === id) || fares[0]
 })
 function formatDuration(mins?: number) {
-  if (mins === undefined || mins === null) return ''
+  if (mins === undefined || mins === null)
+    return ''
   const h = Math.floor(mins / 60)
   const m = mins % 60
   return `${h}时${m}分`
 }
 
-function addPassenger() {
-  const list = store.passengers.length ? [...store.passengers] : []
-  list.push({ id: `p${Date.now()}`, name: '张三', type: 'adult' })
-  store.setPassengers(list)
+function goSelectPassengers() {
+  uni.navigateTo({ url: '/pages/ticket/passenger/select' })
 }
 
 function removePassenger(id: string) {
@@ -53,16 +54,47 @@ function removePassenger(id: string) {
 
 function submit() {
   ensureLogin(() => {
-    store.setContactPhone(phone.value)
+    // 验证订单信息
     if (!draft.value) {
-      uni.showToast({ title: '请选择舱位/席别', icon: 'none' })
+      uni.showToast({ title: '请选择舱位/席别', icon: 'none', duration: 2000 })
       return
     }
-    uni.showToast({ title: '下单成功（mock）', icon: 'none' })
+
+    // 验证乘客信息
+    if (!store.passengers || store.passengers.length === 0) {
+      uni.showToast({ title: '请选择乘车人', icon: 'none', duration: 2000 })
+      return
+    }
+
+    // 验证联系电话
+    const phoneValue = phone.value.trim()
+    if (!phoneValue) {
+      uni.showToast({ title: '请输入联系电话', icon: 'none', duration: 2000 })
+      return
+    }
+
+    const phonePattern = /^1[3-9]\d{9}$/
+    if (!phonePattern.test(phoneValue)) {
+      uni.showToast({ title: '请输入正确的11位手机号', icon: 'none', duration: 2000 })
+      return
+    }
+
+    // 保存联系电话
+    store.setContactPhone(phoneValue)
+
+    // 显示购票成功提示
+    uni.showToast({
+      title: '购票成功！\n祝您旅途愉快！',
+      icon: 'success',
+      duration: 2000,
+    })
+
+    // 延迟跳转到首页
     setTimeout(() => {
       store.resetDraft()
-      uni.switchTab({ url: '/pages/order/index' })
-    }, 500)
+      // 使用 reLaunch 清空页面栈并跳转到首页
+      uni.reLaunch({ url: '/pages/home/index' })
+    }, 2000)
   })
 }
 
@@ -110,36 +142,36 @@ onShow(() => {
       </view>
     </view>
 
-    <view class="section">
+    <view class="section-passengers">
       <view class="section__title">
         常用乘客信息
       </view>
-      <view v-for="p in store.passengers" :key="p.id" class="passenger">
-        <view class="info">
-          <text class="name">{{ p.name }}</text>
-          <text class="type">{{ p.type === 'adult' ? '成人票' : p.type === 'child' ? '儿童票' : '学生票' }}</text>
+      <view v-for="p in store.passengers" :key="p.id" class="passenger-card">
+        <view class="passenger-info">
+          <view class="passenger-row1">
+            <text class="passenger-name">{{ p.name }}</text>
+            <text class="chip">{{ p.type === 'adult' ? '成人票' : p.type === 'child' ? '儿童票' : '学生票' }}</text>
+          </view>
+          <view class="passenger-row2">
+            <text class="passenger-id">身份证{{ p.idNo?.slice(0, 6) }}********{{ p.idNo?.slice(-4) }}</text>
+          </view>
         </view>
-        <wd-button size="small" @click="removePassenger(p.id)">
-          删
-        </wd-button>
+        <view class="passenger-fold" @click="removePassenger(p.id)">
+          <wd-icon name="minus-circle" size="40rpx" color="var(--color-text-secondary)" />
+        </view>
       </view>
-      <view class="add" @click="addPassenger">
+      <view class="add-link" @click="goSelectPassengers">
         添加/编辑乘客
       </view>
     </view>
 
-    <view class="section">
-      <view class="section__title">
-        联系电话
-      </view>
-      <wd-input v-model="phone" placeholder="用于接收订单信息" clearable />
+    <view class="section-phone">
+      <text class="phone-label">联系电话：</text>
+      <wd-input v-model="phone" class="phone-input" placeholder="用于接收订单信息" clearable custom-style="background-color: transparent !important;" />
     </view>
 
     <view class="footer">
-      <view class="total">
-        合计：￥{{ draft?.totalPrice || 0 }}
-      </view>
-      <wd-button type="primary" @click="submit">
+      <wd-button class="cta" type="primary" @click="submit">
         立即下单
       </wd-button>
     </view>
@@ -152,9 +184,22 @@ onShow(() => {
   background: var(--color-bg-primary);
   padding: 0 24rpx 120rpx;
 }
-.head { padding-top: calc(env(safe-area-inset-top) + 20rpx); height: 80rpx; display: flex; align-items: center; justify-content: center; }
-.left-space, .right-space { width: 100rpx; flex: 0 0 auto; }
-.title { color: var(--color-text-dark); font-size: 30rpx; }
+.head {
+  padding-top: calc(env(safe-area-inset-top) + 20rpx);
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.left-space,
+.right-space {
+  width: 100rpx;
+  flex: 0 0 auto;
+}
+.title {
+  color: var(--color-text-dark);
+  font-size: 30rpx;
+}
 .summary {
   background: var(--color-surface);
   border-radius: 20rpx;
@@ -223,60 +268,114 @@ onShow(() => {
 .code {
   color: var(--color-text-secondary);
 }
-.fare-row { margin-top: 6rpx; }
-.fare-name { color: var(--color-text-primary); }
-.fare-price { color: var(--color-text-primary); white-space: nowrap; }
-.currency { font-size: 22rpx; margin-right: 2rpx; opacity: 0.9; }
-.amount { font-size: 32rpx; font-weight: 600; color: var(--color-text-primary); }
-.section {
-  background: var(--color-surface);
-  border-radius: 20rpx;
-  padding: 24rpx;
+.fare-row {
+  margin-top: 6rpx;
+}
+.fare-name {
+  color: var(--color-text-primary);
+}
+.fare-price {
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+.currency {
+  font-size: 20rpx;
+  margin-right: 2rpx;
+  opacity: 0.9;
+}
+.amount {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.section-passengers {
   margin-top: 20rpx;
 }
 .section__title {
   color: var(--color-text-dark);
-  margin-bottom: 12rpx;
+  margin-bottom: 16rpx;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 500;
 }
-.passenger {
+.passenger-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16rpx 0;
-  border-bottom: 2rpx solid var(--color-border-strong);
+  background: var(--color-highlight-bg);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
 }
-.passenger:last-child {
-  border-bottom: none;
-}
-.info {
+.passenger-info {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 8rpx;
 }
-.name {
-  font-weight: 600;
+.passenger-row1,
+.passenger-row2 {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex-wrap: wrap;
 }
-.type {
-  color: var(--color-text-secondary);
+.passenger-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+.passenger-id {
   font-size: 24rpx;
+  color: var(--color-text-secondary);
 }
-.add {
+.chip {
+  font-size: 20rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-secondary);
+  background: transparent;
+}
+.passenger-fold {
+  flex: 0 0 auto;
+  padding: 8rpx;
+}
+.add-link {
   color: var(--color-brand-primary);
-  margin-top: 12rpx;
+  margin-top: 8rpx;
+  text-align: center;
+  font-size: 28rpx;
+}
+.section-phone {
+  margin-top: 24rpx;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.phone-label {
+  color: var(--color-text-dark);
+  font-size: 28rpx;
+  flex: 0 0 auto;
+}
+.phone-input {
+  flex: 1;
 }
 .footer {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--color-surface);
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding: 16rpx 24rpx env(safe-area-inset-bottom);
-  border-top: 2rpx solid var(--color-border-strong);
+  padding: 16rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
-.total {
-  font-weight: 600;
-  color: var(--color-text-primary);
+.cta {
+  min-width: 320rpx;
+  padding: 0 40rpx;
 }
 </style>
