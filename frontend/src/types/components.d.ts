@@ -7,6 +7,7 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    ArticleCard: typeof import('./../components/common/ArticleCard.vue')['default']
     FareTabs: typeof import('./../components/ticket/FareTabs.vue')['default']
     FlightTripCard: typeof import('./../components/ticket/FlightTripCard.vue')['default']
     FloatingBack: typeof import('./../components/common/FloatingBack.vue')['default']

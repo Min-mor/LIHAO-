@@ -12,6 +12,7 @@ import type {
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
+import ArticleCard from '@/components/common/ArticleCard.vue'
 import { getProfileMockData, profileMockData } from '@/mock/profile'
 import { LOGIN_PAGE } from '@/router/config'
 import { useUserStore } from '@/store'
@@ -77,6 +78,34 @@ interface FavoriteCard {
 const footprintTimeline = computed(() => footprintList.value)
 const topicFeed = computed(() => topicList.value)
 const orderTimeline = computed(() => orderList.value)
+
+// 足迹数据适配器 - 转换为 ArticleCard 格式
+const footprintCards = computed(() => {
+  return footprintList.value.map(item => ({
+    id: item.id,
+    cover: item.media[0] || '/static/images/placeholder.png',
+    title: item.title,
+    authorName: userInfo.value.nickname || '旅行者',
+    authorAvatar: userInfo.value.avatar || '/static/images/default-avatar.png',
+    likes: item.likes || 0,
+    isLiked: false,
+    location: item.destination,
+  }))
+})
+
+// 话题数据适配器 - 转换为 ArticleCard 格式
+const topicCards = computed(() => {
+  return topicList.value.map(item => ({
+    id: item.id,
+    cover: item.attachments[0] || '/static/images/placeholder.png',
+    title: item.title,
+    authorName: userInfo.value.nickname || '旅行者',
+    authorAvatar: userInfo.value.avatar || '/static/images/default-avatar.png',
+    likes: item.likes,
+    isLiked: false,
+    location: item.location,
+  }))
+})
 const favoriteCards = computed<FavoriteCard[]>(() => {
   if (favoriteCategory.value === 'sights') {
     return favoriteList.value.sights.map(item => ({
@@ -106,7 +135,7 @@ const orderStatusVariantMap: Record<OrderStatus, 'success' | 'processing' | 'pen
   退款中: 'danger',
 }
 
-const TOPIC_PUBLISH_PAGE = '/pages/topic-publish/index'
+const TOPIC_PUBLISH_PAGE = '/pages/community/publish'
 const PROFILE_PAGE_PATH = '/pages/profile/index'
 
 function formatDateLabel(date: string) {
@@ -311,6 +340,26 @@ function handleFavoriteDetail(item: FavoriteCard) {
     uni.navigateTo({ url: '/pages/product/index' })
   }
 }
+
+// ArticleCard 点击事件处理
+function handleFootprintCardClick(id: string) {
+  uni.navigateTo({ url: `/pages/community-detail/index?id=${id}` })
+}
+
+function handleTopicCardClick(id: string) {
+  uni.navigateTo({ url: `/pages/community-detail/index?id=${id}` })
+}
+
+// ArticleCard 点赞事件处理
+function handleFootprintCardLike(id: string, shouldLike: boolean) {
+  // 足迹是自己的，不能给自己点赞
+  uni.showToast({ title: '不能给自己点赞哦', icon: 'none' })
+}
+
+function handleTopicCardLike(id: string, shouldLike: boolean) {
+  // 话题是自己的，不能给自己点赞
+  uni.showToast({ title: '不能给自己点赞哦', icon: 'none' })
+}
 </script>
 
 <template>
@@ -403,31 +452,20 @@ function handleFavoriteDetail(item: FavoriteCard) {
         >
           <view class="profile__panel-inner">
             <template v-if="tab.value === 'footprint'">
-              <view v-if="footprintTimeline.length" class="profile__timeline">
-                <view
-                  v-for="item in footprintTimeline"
-                  :key="item.id"
-                  class="profile__timeline-item"
-                  @click="handleOpenFootprint(item)"
-                >
-                  <view class="profile__timeline-meta">
-                    <wd-icon name="location" size="32rpx" />
-                    <text class="profile__timeline-date">{{ formatDateLabel(item.date) }}</text>
-                  </view>
-                  <view class="profile__timeline-content">
-                    {{ item.title }}
-                  </view>
-                  <image
-                    v-if="item.media.length"
-                    :src="item.media[0]"
-                    mode="aspectFill"
-                    class="profile__timeline-image"
-                  />
-                  <view v-if="item.destination" class="profile__timeline-location">
-                    <wd-icon name="location" size="28rpx" />
-                    <text class="profile__timeline-location-text">{{ item.destination }}</text>
-                  </view>
-                </view>
+              <view v-if="footprintCards.length" class="profile__card-grid">
+                <ArticleCard
+                  v-for="card in footprintCards"
+                  :id="card.id"
+                  :key="card.id"
+                  :cover="card.cover"
+                  :title="card.title"
+                  :author-name="card.authorName"
+                  :author-avatar="card.authorAvatar"
+                  :likes="card.likes"
+                  :is-liked="card.isLiked"
+                  @click="handleFootprintCardClick"
+                  @like="handleFootprintCardLike"
+                />
               </view>
               <view v-else class="profile__empty">
                 <wd-icon name="location" size="48rpx" />
@@ -440,34 +478,20 @@ function handleFavoriteDetail(item: FavoriteCard) {
                 <text class="profile__topic-plus">＋</text>
                 <text class="profile__topic-placeholder">此刻想说点什么？</text>
               </view>
-              <view v-if="topicFeed.length" class="profile__topic-list">
-                <view
-                  v-for="item in topicFeed"
-                  :key="item.id"
-                  class="profile__topic-item"
-                  @click="handleOpenTopic(item)"
-                >
-                  <view class="profile__topic-header">
-                    <wd-icon name="chat1" size="32rpx" />
-                    <text class="profile__topic-date">{{ formatDateLabel(item.date) }}</text>
-                  </view>
-                  <view class="profile__topic-content">
-                    {{ item.content }}
-                  </view>
-                  <image
-                    v-if="item.attachments.length"
-                    :src="item.attachments[0]"
-                    mode="aspectFill"
-                    class="profile__topic-image"
-                  />
-                  <view class="profile__topic-footer">
-                    <view v-if="item.location" class="profile__topic-location">
-                      <wd-icon name="location" size="28rpx" />
-                      <text class="profile__topic-location-text">{{ item.location }}</text>
-                    </view>
-                    <text class="profile__topic-stats">{{ item.likes }} 赞 · {{ item.comments }} 评论</text>
-                  </view>
-                </view>
+              <view v-if="topicCards.length" class="profile__card-grid">
+                <ArticleCard
+                  v-for="card in topicCards"
+                  :id="card.id"
+                  :key="card.id"
+                  :cover="card.cover"
+                  :title="card.title"
+                  :author-name="card.authorName"
+                  :author-avatar="card.authorAvatar"
+                  :likes="card.likes"
+                  :is-liked="card.isLiked"
+                  @click="handleTopicCardClick"
+                  @like="handleTopicCardLike"
+                />
               </view>
               <view v-else class="profile__empty">
                 <wd-icon name="chat1" size="48rpx" />
@@ -1134,6 +1158,15 @@ $profile-tag-color: rgba($color-brand-primary, 0.82);
   color: rgba($color-base-text, 0.4);
   min-width: 32rpx;
   text-align: center;
+}
+
+// ArticleCard 网格布局（足迹、话题）
+.profile__card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+  padding: 0 24rpx;
+  box-sizing: border-box;
 }
 
 .profile__favorite-grid {

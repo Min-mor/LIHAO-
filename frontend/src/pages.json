@@ -130,6 +130,14 @@
       }
     },
     {
+      "path": "pages/community/publish",
+      "type": "page",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "发布笔记"
+      }
+    },
+    {
       "path": "pages/login/index",
       "type": "login",
       "style": {

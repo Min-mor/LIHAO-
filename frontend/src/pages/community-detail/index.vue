@@ -108,6 +108,44 @@ const viewerProfile: CommunityAuthor = {
   avatar: '',
 }
 
+// 相对时间格式化
+function formatRelativeTime(dateStr: string): string {
+  // 解析时间字符串 (支持 'YYYY-MM-DD HH:mm' 格式)
+  const targetTime = new Date(dateStr.replace(' ', 'T'))
+  const now = new Date()
+
+  const diffMs = now.getTime() - targetTime.getTime()
+  const diffSeconds = Math.floor(diffMs / 1000)
+  const diffMinutes = Math.floor(diffSeconds / 60)
+  const diffHours = Math.floor(diffMinutes / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffSeconds < 60) {
+    return `${diffSeconds}秒前`
+  }
+  else if (diffMinutes < 60) {
+    return `${diffMinutes}分钟前`
+  }
+  else if (diffHours < 24) {
+    return `${diffHours}小时前`
+  }
+  else {
+    return `${diffDays}天前`
+  }
+}
+
+// 底部元信息（小红书样式）
+const metaInfo = computed(() => {
+  const time = formatRelativeTime(detail.postedAt)
+  const parts = [time]
+
+  if (detail.location) {
+    parts.push(detail.location)
+  }
+
+  return parts.join('  ') // 使用两个空格分隔
+})
+
 const followBtnBaseStyle = [
   '--wot-button-padding-x: 34rpx',
   '--wot-button-padding-y: 12rpx',
@@ -242,14 +280,16 @@ function parsePostedAtTimestamp(value?: string): number {
 
 function toggleFollow() {
   ensureLogin(() => {
-    if (!guardSelf('follow', detail.author.name, viewerNickname)) return
+    if (!guardSelf('follow', detail.author.name, viewerNickname))
+      return
     detail.isFollowing = !detail.isFollowing
   })
 }
 
 function toggleLike() {
   ensureLogin(() => {
-    if (!guardSelf('like', detail.author.name, viewerNickname)) return
+    if (!guardSelf('like', detail.author.name, viewerNickname))
+      return
     detail.isLiked = !detail.isLiked
     if (detail.isLiked)
       detail.stats.likes += 1
@@ -260,7 +300,8 @@ function toggleLike() {
 
 function toggleCollect() {
   ensureLogin(() => {
-    if (!guardSelf('collect', detail.author.name, viewerNickname)) return
+    if (!guardSelf('collect', detail.author.name, viewerNickname))
+      return
     detail.isCollected = !detail.isCollected
     if (detail.isCollected)
       detail.stats.collects += 1
@@ -323,6 +364,14 @@ function getVisibleReplies(comment: CommunityComment) {
 
 function computeCommentCount(list: CommunityComment[] = []) {
   return list.reduce((acc, item) => acc + 1 + computeCommentCount(item.replies ?? []), 0)
+}
+
+// 点击关联足迹
+function handleFootprintClick() {
+  if (!detail.relatedFootprint)
+    return
+  // TODO: 跳转到足迹详情页
+  uni.showToast({ title: '跳转到足迹详情', icon: 'none' })
 }
 
 function handleReply(target: CommunityComment, host?: CommunityComment) {
@@ -431,7 +480,6 @@ function cancelReplyContext(force = false) {
           <image :src="detail.author.avatar" mode="aspectFill" class="community-detail__avatar" />
           <view class="community-detail__header-info">
             <text class="community-detail__author-name">{{ detail.author.name }}</text>
-            <text class="community-detail__author-meta">{{ detail.postedAt }} · {{ detail.location }}</text>
           </view>
         </view>
 
@@ -475,6 +523,34 @@ function cancelReplyContext(force = false) {
         <text class="community-detail__body">{{ detail.content }}</text>
       </view>
 
+      <view class="community-detail__meta">
+        <text class="community-detail__meta-text">{{ metaInfo }}</text>
+      </view>
+
+      <!-- 文中提及 -->
+      <view v-if="detail.relatedFootprint" class="community-detail__related">
+        <text class="community-detail__related-title">文中提及</text>
+        <view class="community-detail__related-card" @click="handleFootprintClick">
+          <image
+            :src="detail.relatedFootprint.cover"
+            mode="aspectFill"
+            class="community-detail__related-cover"
+          />
+          <view class="community-detail__related-info">
+            <view class="community-detail__related-header">
+              <text class="community-detail__related-label">景点</text>
+              <text class="community-detail__related-name">{{ detail.relatedFootprint.title }}</text>
+            </view>
+            <text class="community-detail__related-location">{{ detail.relatedFootprint.destination }}</text>
+            <view v-if="detail.relatedFootprint.rating" class="community-detail__related-rating">
+              <text class="community-detail__related-score">{{ detail.relatedFootprint.rating }}</text>
+              <text class="community-detail__related-reviews">18.7万条点评</text>
+            </view>
+          </view>
+          <wd-icon name="arrow-right" size="16px" color="rgba(22, 24, 35, 0.3)" />
+        </view>
+      </view>
+
       <view class="community-detail__comments">
         <view class="community-detail__comments-header">
           <text class="community-detail__comments-count">共 {{ detail.stats.comments }} 条评论</text>
@@ -507,7 +583,7 @@ function cancelReplyContext(force = false) {
             </view>
             <text class="community-detail__comment-content">{{ comment.content }}</text>
             <view class="community-detail__comment-footer">
-              <text class="community-detail__comment-time">{{ comment.postedAt }}</text>
+              <text class="community-detail__comment-time">{{ formatRelativeTime(comment.postedAt) }}</text>
               <view class="community-detail__comment-stats">
                 <view class="community-detail__comment-stat" @click="toggleCommentLike(comment)">
                   <wd-icon
@@ -547,7 +623,7 @@ function cancelReplyContext(force = false) {
                   </view>
                   <text class="community-detail__comment-content">{{ reply.content }}</text>
                   <view class="community-detail__comment-footer">
-                    <text class="community-detail__comment-time">{{ reply.postedAt }}</text>
+                    <text class="community-detail__comment-time">{{ formatRelativeTime(reply.postedAt) }}</text>
                     <view class="community-detail__comment-stats">
                       <view class="community-detail__comment-stat" @click="toggleReplyLike(reply, comment)">
                         <wd-icon
@@ -705,11 +781,6 @@ $detail-card: mix($color-base-highlight, #ffffff, 94%);
   white-space: nowrap;
 }
 
-.community-detail__author-meta {
-  font-size: 24rpx;
-  color: $detail-muted;
-}
-
 .community-detail__header-actions {
   display: inline-flex;
   align-items: center;
@@ -771,6 +842,105 @@ $detail-card: mix($color-base-highlight, #ffffff, 94%);
   line-height: 1.7;
   color: rgba($detail-text, 0.9);
   white-space: pre-wrap;
+}
+
+// 元信息区域（小红书样式）
+.community-detail__meta {
+  padding: 24rpx 28rpx 0;
+}
+
+.community-detail__meta-text {
+  font-size: 24rpx;
+  color: rgba($detail-text, 0.48);
+  line-height: 1.5;
+}
+
+.community-detail__related {
+  padding: 24rpx 28rpx;
+  margin-top: 16rpx;
+}
+
+.community-detail__related-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: $detail-text;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.community-detail__related-card {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 20rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  border: 1rpx solid rgba($detail-text, 0.08);
+}
+
+.community-detail__related-cover {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 12rpx;
+  background: #f5f5f5;
+  flex-shrink: 0;
+}
+
+.community-detail__related-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  min-width: 0;
+}
+
+.community-detail__related-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.community-detail__related-label {
+  padding: 4rpx 12rpx;
+  background: rgba($color-brand-primary, 0.08);
+  border-radius: 8rpx;
+  font-size: 20rpx;
+  color: $color-brand-primary;
+  flex-shrink: 0;
+}
+
+.community-detail__related-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: $detail-text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.community-detail__related-location {
+  font-size: 24rpx;
+  color: rgba($detail-text, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.community-detail__related-rating {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+}
+
+.community-detail__related-score {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #ff6900;
+}
+
+.community-detail__related-reviews {
+  font-size: 22rpx;
+  color: rgba($detail-text, 0.4);
 }
 
 .community-detail__comments {
@@ -888,6 +1058,12 @@ $detail-card: mix($color-base-highlight, #ffffff, 94%);
   flex-direction: column;
   align-items: flex-start;
   gap: 12rpx;
+}
+
+.community-detail__comment-time {
+  font-size: 22rpx;
+  color: rgba($detail-text, 0.4);
+  line-height: 1.4;
 }
 
 .community-detail__comment-stats {

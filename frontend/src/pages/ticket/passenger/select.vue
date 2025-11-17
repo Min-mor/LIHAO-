@@ -44,7 +44,18 @@ function goAdd() {
 function confirm() {
   const list = saved.value.filter(p => checked.value.includes(p.id))
   store.setPassengers(list)
-  uni.navigateBack()
+
+  // 返回上一页
+  uni.navigateBack({
+    delta: 1,
+    fail: (err) => {
+      console.error('返回失败：', err)
+      // 降级方案：直接跳转到提交页
+      uni.redirectTo({
+        url: '/pages/ticket/submit',
+      })
+    },
+  })
 }
 
 function showActions(passenger: any) {
@@ -53,36 +64,28 @@ function showActions(passenger: any) {
 }
 
 function handleAction(detail: any) {
-  console.log('handleAction 接收到的完整参数：', detail)
-  console.log('参数类型：', typeof detail)
-  console.log('参数的所有属性：', detail ? Object.keys(detail) : 'null')
-  
   if (!currentPassenger.value)
     return
 
-  // 尝试多种方式解析参数
   let actionName = ''
-  let actionIndex = -1
-  
-  // 方式1：直接是对象 { item, index }
+
   if (detail && typeof detail === 'object') {
     actionName = detail.item?.name || detail.name || ''
-    actionIndex = detail.index !== undefined ? detail.index : -1
+    const actionIndex = detail.index !== undefined ? detail.index : -1
+
+    if (!actionName && actionIndex === 0)
+      actionName = '编辑'
+    if (!actionName && actionIndex === 1)
+      actionName = '删除'
   }
-  
-  // 方式2：直接是索引
-  if (typeof detail === 'number') {
-    actionIndex = detail
+  else if (typeof detail === 'number') {
+    if (detail === 0)
+      actionName = '编辑'
+    if (detail === 1)
+      actionName = '删除'
   }
-  
-  // 根据索引获取操作名
-  if (actionIndex === 0) actionName = '编辑'
-  if (actionIndex === 1) actionName = '删除'
-  
-  console.log('解析后的操作名称：', actionName, '索引：', actionIndex)
 
   if (actionName === '编辑') {
-    // 编辑乘客信息 - 跳转到添加页面并传递乘客ID
     uni.navigateTo({
       url: `/pages/ticket/passenger/add?id=${currentPassenger.value.id}`,
     })
@@ -92,10 +95,10 @@ function handleAction(detail: any) {
   else if (actionName === '删除') {
     // 保存当前乘客信息，避免弹窗关闭时被清空
     const passengerToDelete = currentPassenger.value
-    
+
     // 先关闭 ActionSheet
     showActionSheet.value = false
-    
+
     // 确认删除
     uni.showModal({
       title: '删除乘客',
@@ -162,7 +165,9 @@ onShow(() => {
       </view>
       <view class="add-info">
         <text class="add-label">{{ maskedPhone }}</text>
-        <view class="add-tag">账号信息</view>
+        <view class="add-tag">
+          账号信息
+        </view>
       </view>
     </view>
 
@@ -302,7 +307,7 @@ onShow(() => {
   padding: 8rpx;
   margin: -8rpx;
   transition: opacity 0.2s;
-  
+
   &:active {
     opacity: 0.6;
   }

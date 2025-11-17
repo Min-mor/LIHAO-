@@ -19,6 +19,13 @@ export const communityDetailMock: CommunityDetail = {
   isFollowing: detailSource.isFollowing,
   isLiked: detailSource.isLiked,
   isCollected: detailSource.isCollected,
+  relatedFootprint: {
+    id: detailSource.id,
+    title: 'Oia 日落之旅',
+    destination: '希腊 · 圣托里尼',
+    cover: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=720&q=60',
+    rating: 5,
+  },
 }
 
 export const communityCommentsMock: CommunityComment[] = [
@@ -32,7 +39,7 @@ export const communityCommentsMock: CommunityComment[] = [
     content: '去年也去了！最推荐早起看日出，山谷里的云海真的太震撼了。记得提前预约营地哦。',
     liked: false,
     likes: 42,
-    postedAt: '2小时前',
+    postedAt: '2025-11-16 18:00',
     replies: [
       {
         id: 'c1-1',
@@ -45,7 +52,7 @@ export const communityCommentsMock: CommunityComment[] = [
         content: '谢谢分享！我们当时是凌晨四点出发的，自驾上山记得带防滑链~',
         liked: false,
         likes: 10,
-        postedAt: '1小时前',
+        postedAt: '2025-11-16 19:00',
       },
     ],
   },
@@ -59,7 +66,7 @@ export const communityCommentsMock: CommunityComment[] = [
     content: '图三的构图太绝了，想问一下是用什么镜头拍的？',
     liked: false,
     likes: 18,
-    postedAt: '3小时前',
+    postedAt: '2025-11-16 17:00',
   },
 ]
 

@@ -35,6 +35,14 @@ export interface CommunityPost {
   self?: boolean
 }
 
+export interface RelatedFootprint {
+  id: string
+  title: string
+  destination: string
+  cover: string
+  rating?: number
+}
+
 export interface CommunityDetail {
   id: string
   title: string
@@ -47,6 +55,7 @@ export interface CommunityDetail {
   isFollowing: boolean
   isLiked: boolean
   isCollected: boolean
+  relatedFootprint?: RelatedFootprint  // 关联的足迹
 }
 
 export interface CommunityComment {

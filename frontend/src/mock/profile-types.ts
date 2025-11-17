@@ -17,18 +17,24 @@ export interface FootprintItem {
   rating?: number
   orderId: string
   media: string[]
+  likes: number
+  comments: number
   createdAt?: Dayjs | string
 }
 
 export interface TopicItem {
   id: string
   date: string
+  title: string
   content: string
   location?: string
   attachments: string[]
   likes: number
   comments: number
   createdAt?: Dayjs | string
+  relatedFootprintId?: string // 关联的足迹ID
+  hashtags?: string[] // 话题标签
+  visibility?: 'public' | 'private' // 可见性
 }
 
 export type OrderType = '高铁动车' | '飞机' | '酒店' | '旅行团'

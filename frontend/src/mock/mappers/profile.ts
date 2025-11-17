@@ -30,11 +30,14 @@ export function getProfileMockData(userId = getActiveUserId()): ProfileMockData 
       rating: item.rating,
       orderId: item.orderId,
       media: deepClone(item.media),
+      likes: item.likes,
+      comments: item.comments,
     }))
 
   const topics = topicSources.filter(item => item.authorId === userId).map(item => ({
     id: item.id,
     date: item.date,
+    title: item.title,
     content: item.content,
     location: item.location,
     attachments: deepClone(item.attachments),

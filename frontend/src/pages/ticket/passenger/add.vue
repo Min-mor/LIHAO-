@@ -44,7 +44,7 @@ function confirm() {
     uni.showToast({ title: '请输入姓名', icon: 'none', duration: 2000 })
     return
   }
-  
+
   const namePattern = /^[\u4E00-\u9FA5A-Z·]+$/i
   if (!namePattern.test(trimmedName)) {
     uni.showToast({ title: '姓名只能包含中文、英文和·', icon: 'none', duration: 2000 })
@@ -211,7 +211,7 @@ onShow(() => {
         <text class="label">证件类型</text>
         <wd-picker v-model="idType" class="field" :columns="idTypeOptions.columns" custom-style="background-color: transparent!important;" @confirm="handleIdTypeConfirm" />
 
-        <text class="label">身份证</text>
+        <text class="label">证件号</text>
         <wd-input v-model="idNo" class="field" placeholder="与证件一致" clearable custom-style="background-color: transparent!important;" />
 
         <text class="label">手机号</text>

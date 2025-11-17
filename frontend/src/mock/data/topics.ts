@@ -27,7 +27,7 @@ export const topicSources: TopicSource[] = [
     ],
     likes: 86,
     comments: 12,
-    postedAt: '13:20',
+    postedAt: '2025-10-09 13:20',
     mediaType: 'gallery',
     mediaCover: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=720&q=60',
     gallery: [
@@ -50,7 +50,7 @@ export const topicSources: TopicSource[] = [
     ],
     likes: 45,
     comments: 6,
-    postedAt: '20:42',
+    postedAt: '2025-09-30 20:42',
     mediaType: 'gallery',
     mediaCover: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=720&q=60',
     gallery: [
@@ -69,7 +69,7 @@ export const topicSources: TopicSource[] = [
     attachments: [],
     likes: 58,
     comments: 18,
-    postedAt: '08:18',
+    postedAt: '2025-09-12 08:18',
     mediaType: 'video',
     mediaCover: 'https://images.unsplash.com/photo-1474511320723-9a56873867b5?auto=format&fit=crop&w=900&q=60',
     duration: '02:14',
