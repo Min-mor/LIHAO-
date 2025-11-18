@@ -133,6 +133,12 @@ $avatar-size: 40rpx;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
+  // 确保无额外空白
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+  height: fit-content;
+
   &:active {
     transform: scale(0.98);
     box-shadow: $card-shadow-hover;
@@ -151,6 +157,10 @@ $avatar-size: 40rpx;
   aspect-ratio: 3 / 4; // 竖版比例，符合小红书风格
   object-fit: cover;
   display: block;
+  vertical-align: top;
+  margin: 0;
+  padding: 0;
+  line-height: 0;
 }
 
 // 内容区域
@@ -270,7 +280,8 @@ $avatar-size: 40rpx;
 
 // 点赞动画
 @keyframes heart-beat {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   25% {

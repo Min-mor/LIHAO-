@@ -14,10 +14,11 @@ definePage({
 })
 
 const pagePaddingTop = computed(() => `${(safeAreaInsets?.top || 0) + 32}px`)
+const pagePaddingBottom = computed(() => `calc(200rpx + ${(safeAreaInsets?.bottom || 0) * 2}px)`)
 </script>
 
 <template>
-  <view class="romantic" :style="{ paddingTop: pagePaddingTop }">
+  <view class="romantic" :style="{ paddingTop: pagePaddingTop, paddingBottom: pagePaddingBottom }">
     <view class="romantic__header">
       <text class="romantic__title">心动精选</text>
       <text class="romantic__subtitle">为你甄选充满惊喜的主题活动</text>
@@ -30,14 +31,12 @@ const pagePaddingTop = computed(() => `${(safeAreaInsets?.top || 0) + 32}px`)
         <text class="romantic__item-desc">探索更多浪漫灵感，等待下次出发。</text>
       </view>
     </view>
-
   </view>
 </template>
 
 <style scoped lang="scss">
 .romantic {
-  min-height: 100vh;
-  padding: 32rpx 32rpx 160rpx;
+  padding: 32rpx;
   background: #fcfbfa;
   color: #161823;
   display: flex;

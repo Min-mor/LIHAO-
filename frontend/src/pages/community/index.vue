@@ -58,7 +58,8 @@ const filteredPosts = computed(() => {
   return list.slice().sort((a, b) => getTimeValue(b.postedAt) - getTimeValue(a.postedAt))
 })
 
-const pagePaddingTop = computed(() => `${(safeAreaInsets?.top || 0) + 24}px`)
+const pagePaddingTop = computed(() => `${(safeAreaInsets?.top || 0) + 12}px`)
+const pagePaddingBottom = computed(() => `calc(200rpx + ${(safeAreaInsets?.bottom || 0) * 2}px)`)
 
 const { isLoggedIn, ensureLogin } = useLoginGuard()
 const loginPrompt = useLoginPromptStore()
@@ -153,7 +154,7 @@ function handleCardLike(id: string, shouldLike: boolean) {
 </script>
 
 <template>
-  <view class="community" :style="{ paddingTop: pagePaddingTop }">
+  <view class="community" :style="{ paddingTop: pagePaddingTop, paddingBottom: pagePaddingBottom }">
     <view class="community__top">
       <view class="community__tabs">
         <view
@@ -208,10 +209,9 @@ $community-fab-shadow: 0 16rpx 32rpx rgba($color-brand-primary, 0.18);
 
 .community {
   position: relative;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 24rpx 28rpx 160rpx;
+  padding: 24rpx 28rpx;
   background: $community-bg;
 }
 

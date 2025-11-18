@@ -1,0 +1,36 @@
+---
+import DashboardLayout from '@/layouts/DashboardLayout.astro';
+import { Button as ReactButton } from '@react/ui/button';
+import { Button as VueButton } from '@vue/ui/button';
+---
+
+<DashboardLayout
+  title="Aurora Dashboard Seed"
+  description="单一 Astro 工程，面向 React 与 Vue 团队的 shadcn 组件实验场"
+>
+  <section class="rounded-2xl border border-white/10 bg-white/[0.02] p-6 shadow-[0_0_30px_rgba(15,23,42,0.35)] backdrop-blur">
+    <p class="text-xs uppercase tracking-[0.3em] text-emerald-400/70">React Island</p>
+    <h2 class="mt-2 text-xl font-semibold text-white">shadcn/ui React Button</h2>
+    <p class="mt-1 text-sm text-slate-300">
+      CLI：<code>npx shadcn@latest add button</code>，输出位于 <code>@react/ui/button</code>。
+    </p>
+    <div class="mt-4 flex flex-wrap gap-3 text-sm">
+      <ReactButton client:load className="min-w-32">React 按钮</ReactButton>
+      <ReactButton client:load variant="outline" className="min-w-32">
+        Outline
+      </ReactButton>
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-white/10 bg-slate-900/60 p-6 text-left shadow-[0_0_30px_rgba(8,18,28,0.45)] backdrop-blur">
+    <p class="text-xs uppercase tracking-[0.3em] text-sky-300/70">Vue Island</p>
+    <h2 class="mt-2 text-xl font-semibold text-white">shadcn-vue Button</h2>
+    <p class="mt-1 text-sm text-slate-300">
+      CLI：<code>npx shadcn-vue@latest add button</code>，输出位于 <code>@vue/ui/button</code>。
+    </p>
+    <div class="mt-4 flex flex-wrap gap-3 text-sm">
+      <VueButton client:load class="min-w-32">Vue 按钮</VueButton>
+      <VueButton client:load variant="outline" class="min-w-32">Outline</VueButton>
+    </div>
+  </section>
+</DashboardLayout>

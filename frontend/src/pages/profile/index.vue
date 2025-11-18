@@ -33,7 +33,7 @@ const tokenStore = useTokenStore()
 const { userInfo } = storeToRefs(userStore)
 
 const pagePaddingTop = computed(() => `${(safeAreaInsets?.top || 0) + 24}px`)
-const pagePaddingBottom = computed(() => '32rpx')
+const pagePaddingBottom = computed(() => `calc(200rpx + ${(safeAreaInsets?.bottom || 0) * 2}px)`)
 const hasLogin = computed(() => tokenStore.hasLogin)
 const signatureText = computed(() => {
   const info = userInfo.value as { signature?: string } | undefined
@@ -445,11 +445,7 @@ function handleTopicCardLike(id: string, shouldLike: boolean) {
         :key="tab.value"
         class="profile__swiper-item"
       >
-        <scroll-view
-          class="profile__panel"
-          scroll-y
-          :show-scrollbar="false"
-        >
+        <view class="profile__panel">
           <view class="profile__panel-inner">
             <template v-if="tab.value === 'footprint'">
               <view v-if="footprintCards.length" class="profile__card-grid">
@@ -567,7 +563,7 @@ function handleTopicCardLike(id: string, shouldLike: boolean) {
               </view>
             </template>
           </view>
-        </scroll-view>
+        </view>
       </swiper-item>
     </swiper>
   </view>
@@ -592,8 +588,7 @@ $profile-tag-bg: rgba($color-brand-primary, 0.12);
 $profile-tag-color: rgba($color-brand-primary, 0.82);
 
 .profile {
-  min-height: 100vh;
-  padding: 24rpx 28rpx 160rpx;
+  padding: 24rpx 28rpx;
   background: $profile-base-bg;
   display: flex;
   flex-direction: column;
@@ -752,55 +747,35 @@ $profile-tag-color: rgba($color-brand-primary, 0.82);
 .profile__tab.is-active {
   color: #fff;
   background: $color-brand-primary;
-  // box-shadow: $profile-tab-shadow;
 }
 
 .profile__swiper {
   width: 100%;
   flex: none !important;
-  min-height: 560rpx;
-  height: auto;
-  overflow: visible;
-}
+  min-height: 800rpx;
 
-:deep(.profile__swiper .uni-swiper) {
-  flex: none !important;
-  min-height: 560rpx;
-  height: auto !important;
-  overflow: visible !important;
-}
+  :deep(swiper),
+  :deep(.uni-swiper) {
+    flex: none !important;
+    min-height: 800rpx;
+  }
 
-:deep(.profile__swiper uni-swiper) {
-  flex: initial !important;
-  min-height: 560rpx;
-  height: auto !important;
-  align-items: stretch !important;
-}
+  :deep(.uni-swiper-wrapper) {
+    min-height: 800rpx;
+  }
 
-:deep(.profile__swiper .uni-swiper-wrapper) {
-  height: auto !important;
-  min-height: 560rpx;
-  overflow: visible !important;
-}
-
-:deep(.profile__swiper uni-swiper-item),
-:deep(.profile__swiper swiper-item) {
-  height: auto !important;
-  min-height: 560rpx;
-}
-
-:deep(.profile__swiper .uni-swiper-slide) {
-  display: block;
-  height: auto !important;
-  min-height: 560rpx;
-  overflow: visible !important;
+  :deep(.uni-swiper-slide) {
+    min-height: 800rpx;
+    padding-bottom: 80rpx;
+  }
 }
 
 .profile__panel {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 12rpx;
-  padding: 0 24rpx 16rpx;
   box-sizing: border-box;
 }
 
@@ -808,12 +783,11 @@ $profile-tag-color: rgba($color-brand-primary, 0.82);
   display: flex;
   flex-direction: column;
   gap: 28rpx;
-  padding-top: 4rpx;
-  padding-bottom: 16rpx;
 }
 
 .profile__empty {
-  padding: 120rpx 24rpx;
+  padding: 80rpx 24rpx;
+  margin: 0 24rpx;
   text-align: center;
   color: rgba($color-base-text, 0.45);
   display: grid;
@@ -822,6 +796,7 @@ $profile-tag-color: rgba($color-brand-primary, 0.82);
   background: $profile-panel-bg;
   border-radius: 32rpx;
   box-shadow: inset 0 0 0 2rpx rgba($color-brand-primary, 0.04);
+  line-height: 1.4;
 }
 
 .profile__timeline {
@@ -925,12 +900,14 @@ $profile-tag-color: rgba($color-brand-primary, 0.82);
   align-items: center;
   gap: 16rpx;
   padding: 24rpx 32rpx;
+  margin: 0 24rpx;
   border-radius: 36rpx;
   background: rgba($color-brand-primary, 0.06);
   font-size: 28rpx;
   color: rgba($color-base-text, 0.5);
   cursor: pointer;
   backdrop-filter: blur(8rpx);
+  line-height: 1;
 }
 
 .profile__topic-plus {
@@ -1018,6 +995,9 @@ $profile-tag-color: rgba($color-brand-primary, 0.82);
   display: flex;
   flex-direction: column;
   gap: 24rpx;
+  padding: 0 24rpx;
+  min-height: 0;
+  height: fit-content;
 }
 
 .profile__order-item {
@@ -1162,17 +1142,26 @@ $profile-tag-color: rgba($color-brand-primary, 0.82);
 
 // ArticleCard 网格布局（足迹、话题）
 .profile__card-grid {
+  position: relative;
+  z-index: 2;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20rpx;
-  padding: 0 24rpx;
+  padding: 0 24rpx 40rpx;
   box-sizing: border-box;
+
+  // 确保高度完全由内容决定
+  min-height: 0;
+  height: fit-content;
 }
 
 .profile__favorite-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24rpx;
+  padding: 0 24rpx;
+  min-height: 0;
+  height: fit-content;
 }
 
 .profile__favorite-card {

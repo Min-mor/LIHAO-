@@ -54,6 +54,7 @@ const trips = reactive<TripCard[]>([
 ])
 
 const paddingTop = computed(() => `${(safeAreaInsets?.top || 0) + 24}px`)
+const paddingBottom = computed(() => `calc(200rpx + ${(safeAreaInsets?.bottom || 0) * 2}px)`)
 
 function handleCreateTrip() {
   uni.showToast({ title: '敬请期待行程创建', icon: 'none' })
@@ -70,7 +71,7 @@ function getStatusLabel(status: TripStatus) {
 </script>
 
 <template>
-  <view class="trip" :style="{ paddingTop }">
+  <view class="trip" :style="{ paddingTop, paddingBottom }">
     <view class="trip__top">
       <view>
         <text class="trip__title">我的行程</text>
@@ -150,10 +151,9 @@ $trip-status-completed-bg: rgba($color-base-border, 0.12);
 
 .trip {
   position: relative;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 24rpx 32rpx 160rpx;
+  padding: 24rpx 32rpx;
   background: $trip-bg;
   color: var(--color-text-primary);
 }

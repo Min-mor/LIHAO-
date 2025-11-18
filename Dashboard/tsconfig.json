@@ -1,0 +1,23 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "include": [
+    ".astro/types.d.ts",
+    "**/*"
+  ],
+  "exclude": [
+    "dist"
+  ],
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"],
+      "@react/*": ["src/components/react/*"],
+      "@vue/*": ["src/components/vue/*"],
+      "@lib/*": ["src/lib/*"],
+      "@react/lib/*": ["src/lib/*"],
+      "@vue/lib/*": ["src/lib/*"]
+    },
+    "jsx": "preserve",
+    "jsxImportSource": "react"
+  }
+}

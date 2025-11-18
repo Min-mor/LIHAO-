@@ -38,6 +38,7 @@ const swiperList = ref<HomeSwiperItem[]>(heroPackagesMock.map(item => ({ ...item
 
 const headerPaddingOffset = typeof uni !== 'undefined' && uni.upx2px ? uni.upx2px(32) : 32
 const homePaddingTop = computed(() => `${(safeAreaInsets?.top || 0) + headerPaddingOffset}px`)
+const homePaddingBottom = computed(() => `calc(200rpx + ${(safeAreaInsets?.bottom || 0) * 2}px)`)
 const toolButtonStyle = 'border-radius:999rpx;padding:36rpx 0;background:var(--color-brand-primary)!important;color:var(--color-text-inverse)!important;min-width:auto;display:inline-flex;align-items:center;justify-content:center;'
 const seeMoreButtonStyle = 'border-radius:999rpx;padding:18rpx 36rpx;background:var(--color-brand-primary)!important;color:var(--color-text-inverse)!important;min-width:220rpx;max-width:360rpx;display:flex;align-items:center;justify-content:center;width:auto;margin:24rpx auto 0;'
 const filterNormalStyle = '--wot-button-info-bg-color:rgba(var(--color-text-primary-rgb),0.06);--wot-button-info-color:var(--color-text-primary);--wot-button-info-border-radius:999rpx;--wot-button-info-padding-y:14rpx;--wot-button-info-padding-x:36rpx;'
@@ -110,7 +111,7 @@ onShow(() => {
 </script>
 
 <template>
-  <view class="home" :style="{ paddingTop: homePaddingTop }">
+  <view class="home" :style="{ paddingTop: homePaddingTop, paddingBottom: homePaddingBottom }">
     <view class="home__header">
       <view class="home__greeting">
         <text class="home__greeting-title">Hello {{ greeting }}</text>
@@ -232,11 +233,10 @@ onShow(() => {
 
 <style scoped lang="scss">
 .home {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   gap: 32rpx;
-  padding: 32rpx 32rpx 160rpx;
+  padding: 32rpx;
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
 }
@@ -317,6 +317,13 @@ onShow(() => {
 .home__filter {
   font-size: 28rpx;
   min-width: 120rpx;
+}
+
+.home__swiper {
+  :deep(swiper),
+  :deep(.uni-swiper) {
+    flex: none !important;
+  }
 }
 
 .home__swiper-card {
