@@ -1,0 +1,17 @@
+---
+import DashboardLayout from '@/layouts/DashboardLayout.astro';
+import SidebarPlayground from '@/components/vue/SidebarPlayground.vue';
+
+---
+
+<DashboardLayout title="Sidebar 测试页" description="用于快速联调 shadcn-vue sidebar 组件">
+  <section class="rounded-2xl border border-white/10 bg-slate-900/60 p-6 shadow-[0_0_30px_rgba(8,18,28,0.45)] backdrop-blur">
+    <p class="text-xs uppercase tracking-[0.3em] text-emerald-300/70">Vue Sidebar</p>
+    <h2 class="mt-2 text-xl font-semibold text-white">商家/管理员后台侧边栏实验区</h2>
+    <p class="mt-1 text-sm text-slate-400">
+      SidebarProvider、SidebarTrigger 与 AppSidebar 均通过 <code>client:load</code> 挂载，可直接替换菜单数据。
+    </p>
+
+    <SidebarPlayground client:load />
+  </section>
+</DashboardLayout>
