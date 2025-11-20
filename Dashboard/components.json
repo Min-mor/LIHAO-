@@ -5,15 +5,15 @@
   "tailwind": {
     "config": "",
     "css": "src/styles/global.css",
-    "baseColor": "neutral",
+    "baseColor": "slate",
     "cssVariables": true,
     "prefix": ""
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "@vue",
+    "components": "@/components",
     "utils": "@/lib/utils",
-    "ui": "@vue/ui",
+    "ui": "@/components/ui",
     "lib": "@/lib",
     "composables": "@/composables"
   },
