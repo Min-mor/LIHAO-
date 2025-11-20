@@ -1,4 +1,4 @@
-import type { IUserInfoRes } from '@/api/types/login'
+import type { IUserInfoRes } from '@/api/modules/auth/types'
 
 export interface SocialUser extends IUserInfoRes {
   phone: string

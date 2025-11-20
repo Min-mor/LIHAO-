@@ -1,9 +1,9 @@
-import type { IUserInfoRes } from '@/api/types/login'
+import type { IUserInfoRes } from '@/api/modules/auth/types'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import {
   getUserInfo,
-} from '@/api/login'
+} from '@/api/modules/auth/login'
 import { mockFetchUserInfo } from '@/mock/auth'
 
 // 初始化状态

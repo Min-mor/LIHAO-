@@ -1,4 +1,4 @@
-import type { PassengerInfo } from '@/api/types/passenger'
+import type { PassengerInfo } from '@/api/modules/passenger/types'
 
 // 模拟的乘客数据库（按用户ID组织）
 const passengerDatabase: Record<number, PassengerInfo[]> = {}

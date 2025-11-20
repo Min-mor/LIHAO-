@@ -1,4 +1,4 @@
-import type { CommunityComment, CommunityDetail } from '@/api/types/community'
+import type { CommunityComment, CommunityDetail } from '@/api/modules/community/types'
 import { getCommunityDetailSource } from '@/mock/mappers/community'
 
 const detailSource = getCommunityDetailSource()

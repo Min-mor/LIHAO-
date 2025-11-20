@@ -214,19 +214,49 @@
           <view class="publish__location-search">
             <wd-icon name="search" size="18px" color="rgba(22, 24, 35, 0.4)" />
             <input
+              v-model.trim="locationSearch"
               type="text"
-              placeholder="搜索地点"
+              placeholder="搜索附近地点"
               class="publish__location-input"
+              :disabled="nearbyLoading"
+              @confirm="handleSearch"
             >
+            <text class="publish__location-search-refresh" @click="handleSearch">搜索</text>
           </view>
           <scroll-view scroll-y class="publish__location-list">
-            <view
-              v-for="(item, index) in locationList"
-              :key="index"
-              class="publish__location-item"
-              @click="selectLocation(item)"
-            >
-              <text class="publish__location-name">{{ item }}</text>
+            <view class="publish__location-section">
+              <view class="publish__location-section-header">
+                <text>{{ locationSearch ? '搜索结果' : '附近地址候选' }}</text>
+                <text v-if="nearbyLoading" class="publish__location-hint">定位中...</text>
+              </view>
+              <view v-if="nearbyError" class="publish__nearby-error">
+                <text>{{ nearbyError }}</text>
+                <text class="publish__location-retry" @click="retryNearby">重试</text>
+              </view>
+              <view v-else-if="!candidateLocations.length && !nearbyLoading" class="publish__nearby-empty">
+                <text>暂未获取到附近地址，试试输入其他关键词</text>
+              </view>
+              <view
+                v-for="item in candidateLocations"
+                :key="item.id || item.title"
+                class="publish__nearby-item"
+                :class="{ 'is-active': item.title === location }"
+                @click="selectNearbyLocation(item)"
+              >
+                <view class="publish__nearby-item-main">
+                  <text class="publish__nearby-name">{{ item.title }}</text>
+                  <text v-if="item.address" class="publish__nearby-address">{{ item.address }}</text>
+                </view>
+                <view class="publish__nearby-meta">
+                  <text v-if="item.distance" class="publish__nearby-distance">{{ formatDistance(item.distance) }}</text>
+                  <wd-icon
+                    v-if="item.title === location"
+                    name="success"
+                    size="18px"
+                    color="var(--color-brand-primary)"
+                  />
+                </view>
+              </view>
             </view>
           </scroll-view>
         </view>
@@ -287,12 +317,13 @@
 
 <script setup lang="ts">
 import type { FootprintItem } from '@/mock/profile-types'
+import type { NearbyPlace } from '@/utils/location'
 import { onLoad } from '@dcloudio/uni-app'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { profileMockData } from '@/mock/profile'
-import { mockLocations, visibilityOptions as mockVisibilityOptions } from '@/mock/publish'
 import { publishNote } from '@/service/publish'
 import { useUserStore } from '@/store'
+import { fetchNearbyPlaces, getCurrentLocation } from '@/utils/location'
 import { safeAreaInsets } from '@/utils/systemInfo'
 
 definePage({
@@ -316,6 +347,7 @@ const hashtags = ref<string[]>([])
 const location = ref('')
 const visibility = ref<'public' | 'private' | 'friends' | 'custom_show' | 'custom_hide'>('public')
 const selectedFootprint = ref<FootprintItem | null>(null)
+const locationSearch = ref('')
 
 // 弹窗控制
 const showHashtagPopup = ref(false)
@@ -330,18 +362,45 @@ const locationTab = ref<'location' | 'route'>('location') // 地点选择tab
 const footprintList = ref<FootprintItem[]>([])
 const userStore = useUserStore()
 
-// 从 Mock 数据导入
-const locationList = ref(mockLocations)
-const visibilityOptions = mockVisibilityOptions
+// 静态配置
+const visibilityOptions: Array<{ label: string, value: typeof visibility.value, icon: string }> = [
+  { label: '公开可见', value: 'public', icon: 'lock-off' },
+  { label: '仅互关好友可见', value: 'friends', icon: 'user-talk' },
+  { label: '仅自己可见', value: 'private', icon: 'lock-on' },
+]
+const nearbyLocations = ref<NearbyPlace[]>([])
+const nearbyLoading = ref(false)
+const nearbyError = ref('')
+const hasRequestedNearby = ref(false)
+const currentCoords = ref<{ latitude: number, longitude: number } | null>(null)
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 // 当前选中的可见性选项
 const currentVisibilityOption = computed(() => {
   return visibilityOptions.find(opt => opt.value === visibility.value) || visibilityOptions[0]
 })
 
+const candidateLocations = computed(() => nearbyLocations.value)
+
 onLoad(() => {
   // 加载用户的足迹列表
   loadFootprints()
+})
+
+watch(showLocationPopup, (visible) => {
+  if (visible && !hasRequestedNearby.value)
+    initNearby()
+})
+
+watch(locationSearch, (keyword) => {
+  if (!hasRequestedNearby.value)
+    return
+  scheduleSearch(keyword)
+})
+
+onBeforeUnmount(() => {
+  clearTimeout(searchTimer as any)
 })
 
 // 加载足迹列表
@@ -395,6 +454,86 @@ function removeHashtag(index: number) {
 function selectLocation(loc: string) {
   location.value = loc
   showLocationPopup.value = false
+}
+
+function selectNearbyLocation(place: NearbyPlace) {
+  location.value = place.title
+  showLocationPopup.value = false
+}
+
+async function initNearby(force = false) {
+  if (nearbyLoading.value)
+    return
+  try {
+    nearbyError.value = ''
+    if (!currentCoords.value || force)
+      currentCoords.value = await getCurrentLocation()
+    await loadNearby({ keyword: locationSearch.value })
+    hasRequestedNearby.value = true
+  }
+  catch (error) {
+    handleNearbyError(error)
+  }
+}
+
+function scheduleSearch(keyword: string) {
+  if (searchTimer)
+    clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    loadNearby({ keyword })
+  }, 400)
+}
+
+function handleSearch() {
+  if (!hasRequestedNearby.value)
+    hasRequestedNearby.value = true
+  loadNearby({ keyword: locationSearch.value.trim() })
+}
+
+async function loadNearby({ keyword }: { keyword?: string }) {
+  if (!currentCoords.value)
+    currentCoords.value = await getCurrentLocation()
+  nearbyLoading.value = true
+  try {
+    nearbyLocations.value = await fetchNearbyPlaces({
+      keyword,
+      latitude: currentCoords.value.latitude,
+      longitude: currentCoords.value.longitude,
+    })
+    if (!nearbyLocations.value.length)
+      nearbyError.value = '附近暂无推荐，试试输入其他关键词'
+    else
+      nearbyError.value = ''
+  }
+  catch (error) {
+    handleNearbyError(error)
+  }
+  finally {
+    nearbyLoading.value = false
+  }
+}
+
+function refreshNearby() {
+  hasRequestedNearby.value = false
+  initNearby(true)
+}
+
+function retryNearby() {
+  initNearby(true)
+}
+
+function handleNearbyError(error: unknown) {
+  const message = error instanceof Error ? error.message : typeof error === 'string' ? error : '获取附近地点失败'
+  nearbyLocations.value = []
+  nearbyError.value = message.includes('auth') || message.includes('permission')
+    ? '定位未授权，已经恢复常用地点'
+    : message
+}
+
+function formatDistance(distance?: number) {
+  if (typeof distance !== 'number' || Number.isNaN(distance))
+    return ''
+  return distance >= 1000 ? `${(distance / 1000).toFixed(1)} km` : `${Math.round(distance)} m`
 }
 
 // 选择可见性
@@ -933,6 +1072,11 @@ $navbar-height: 88rpx;
   border-radius: 12rpx;
 }
 
+.publish__location-search-refresh {
+  font-size: 24rpx;
+  color: var(--color-brand-primary);
+}
+
 .publish__location-input {
   flex: 1;
   font-size: 26rpx;
@@ -946,6 +1090,24 @@ $navbar-height: 88rpx;
   padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
 }
 
+.publish__location-section {
+  margin-bottom: 32rpx;
+}
+
+.publish__location-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  margin-bottom: 12rpx;
+}
+
+.publish__location-hint {
+  font-size: 24rpx;
+  color: var(--color-text-muted);
+}
+
 .publish__location-item {
   padding: 24rpx 0;
   border-bottom: 1rpx solid var(--color-border-light);
@@ -954,6 +1116,50 @@ $navbar-height: 88rpx;
 .publish__location-name {
   font-size: 28rpx;
   color: var(--color-text-primary);
+}
+
+.publish__nearby-item {
+  padding: 20rpx 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 16rpx;
+  border-bottom: 1rpx dashed var(--color-border-light);
+}
+
+.publish__nearby-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.publish__nearby-name {
+  font-size: 28rpx;
+  color: var(--color-text-primary);
+}
+
+.publish__nearby-address {
+  font-size: 24rpx;
+  color: var(--color-text-muted);
+}
+
+.publish__nearby-distance {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.publish__nearby-error,
+.publish__nearby-empty {
+  padding: 24rpx 0;
+  font-size: 24rpx;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.publish__location-retry {
+  color: var(--color-brand-primary);
 }
 
 .publish__route-content {

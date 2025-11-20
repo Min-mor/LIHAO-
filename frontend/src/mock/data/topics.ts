@@ -1,5 +1,5 @@
 import type { TopicItem } from '../profile-types'
-import type { CommunityTab } from '@/api/types/community'
+import type { CommunityTab } from '@/api/modules/community/types'
 
 export interface TopicSource extends TopicItem {
   authorId: number

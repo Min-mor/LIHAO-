@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CommunityAuthor, CommunityComment, CommunityDetail } from '@/api/types/community'
+import type { CommunityAuthor, CommunityComment, CommunityDetail } from '@/api/modules/community/types'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import LoginPrompt from '@/components/LoginPrompt.vue'

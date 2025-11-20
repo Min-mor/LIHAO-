@@ -1,4 +1,4 @@
-import { apiSendSecurityCode, apiUpdatePassword, apiUpdatePhone } from '@/api/security'
+import { apiSendSecurityCode, apiUpdatePassword, apiUpdatePhone } from '@/api/modules/security/security'
 import { mockSendSecurityCode, mockUpdatePassword, mockUpdatePhone } from '@/mock/security'
 
 export type SecurityScene = 'login' | 'password' | 'phone'

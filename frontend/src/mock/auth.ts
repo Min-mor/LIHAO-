@@ -1,4 +1,4 @@
-import type { IAuthLoginRes, IUserInfoRes } from '@/api/types/login'
+import type { IAuthLoginRes, IUserInfoRes } from '@/api/modules/auth/types'
 import { resetActiveUser as _resetActiveUser, claimNextUserId, findUserByPhone, getActiveUserId, registerUser, setActiveUserId, users } from '@/mock/data/users'
 
 export interface MockRegisterPayload {

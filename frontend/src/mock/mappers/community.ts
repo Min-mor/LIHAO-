@@ -1,4 +1,4 @@
-import type { CommunityAuthor, CommunityPost, CommunityTab } from '@/api/types/community'
+import type { CommunityAuthor, CommunityPost, CommunityTab } from '@/api/modules/community/types'
 import { footprintSources } from '@/mock/data/footprints'
 import { topicSources } from '@/mock/data/topics'
 import { getActiveUserId, users } from '@/mock/data/users'

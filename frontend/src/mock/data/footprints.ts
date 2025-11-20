@@ -1,4 +1,4 @@
-import type { CommunityTab } from '@/api/types/community'
+import type { CommunityTab } from '@/api/modules/community/types'
 
 export interface FootprintSource {
   id: string

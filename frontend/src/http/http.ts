@@ -1,4 +1,4 @@
-import type { IDoubleTokenRes } from '@/api/types/login'
+import type { IDoubleTokenRes } from '@/api/modules/auth/types'
 import type { CustomRequestOptions, IResponse } from '@/http/types'
 import { nextTick } from 'vue'
 import { LOGIN_PAGE } from '@/router/config'

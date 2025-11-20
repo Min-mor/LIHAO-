@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CommunityPost, CommunityTab } from '@/api/types/community'
+import type { CommunityPost, CommunityTab } from '@/api/modules/community/types'
 import { onShow } from '@dcloudio/uni-app'
 import { computed, ref, watch } from 'vue'
 import ArticleCard from '@/components/common/ArticleCard.vue'

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { IUploadSuccessInfo } from '@/api/types/login'
+import type { IUploadSuccessInfo } from '@/api/modules/auth/types'
 import { storeToRefs } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 import FloatingBack from '@/components/common/FloatingBack.vue'

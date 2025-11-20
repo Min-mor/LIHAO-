@@ -1,4 +1,4 @@
-import type { DestinationTab, ProductCard } from '@/api/types/product'
+import type { DestinationTab, ProductCard } from '@/api/modules/product/types'
 
 export const destinationTabsMock: DestinationTab[] = [
   { name: 'nearby', title: '附近' },

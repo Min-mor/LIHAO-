@@ -42,11 +42,11 @@ const tabs = [
 
 const state = reactive({
   activeTab: 'train',
-  fromCity: '上海',
-  toCity: '北京',
+  fromCity: '',
+  toCity: '',
 })
 
-const ticketChecks = ref<string[]>(['standard'])
+const ticketChecks = ref<string[]>([])
 
 const actionButtonStyle
   = 'border-radius:999rpx;background:#325947;color:#fcfbfa;border:none;padding:28rpx 0;font-size:32rpx;'
@@ -167,6 +167,17 @@ function handleCalendarConfirm({ value }: { value: number }) {
 }
 
 function handleQuery() {
+  const fromCity = state.fromCity.trim()
+  const toCity = state.toCity.trim()
+
+  if (!fromCity || !toCity) {
+    uni.showToast({ title: '请输入出发和到达城市', icon: 'none' })
+    return
+  }
+
+  state.fromCity = fromCity
+  state.toCity = toCity
+
   ensureLogin(() => {
     const ticket = useTicketStore()
     ticket.setSearch({
@@ -210,11 +221,25 @@ onShow(() => {
 
         <view class="traffic__panel">
           <view class="traffic__row traffic__row--cities">
-            <text class="traffic__city">{{ state.fromCity }}</text>
+            <input
+              v-model.trim="state.fromCity"
+              type="text"
+              class="traffic__city-input"
+              placeholder="出发城市"
+              placeholder-style="color: rgba(22, 24, 35, 0.4); text-align: center;"
+              confirm-type="done"
+            >
             <view class="traffic__swap" @click="handleSwapCity">
               <wd-icon name="translate-bold" size="26px" />
             </view>
-            <text class="traffic__city">{{ state.toCity }}</text>
+            <input
+              v-model.trim="state.toCity"
+              type="text"
+              class="traffic__city-input"
+              placeholder="到达城市"
+              placeholder-style="color: rgba(22, 24, 35, 0.4); text-align: center;"
+              confirm-type="done"
+            >
           </view>
 
           <view class="traffic__divider" />
@@ -316,7 +341,9 @@ onShow(() => {
   height: 6rpx;
   border-radius: 999rpx;
   background: transparent;
-  transition: width 0.24s ease, background 0.24s ease;
+  transition:
+    width 0.24s ease,
+    background 0.24s ease;
 }
 
 .traffic__tab--active::after {
@@ -351,9 +378,16 @@ onShow(() => {
   cursor: pointer;
 }
 
-.traffic__city {
+.traffic__city-input {
   flex: 1;
   text-align: center;
+  font-size: 36rpx;
+  font-weight: 600;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  padding: 10rpx 12rpx;
 }
 
 .traffic__swap {

@@ -1,6 +1,6 @@
 import type { FareOption, OrderDraft, SearchContext, Trip } from '@/types/ticket'
 import { defineStore } from 'pinia'
-import { searchTrips } from '@/api/ticket'
+import { searchTrips } from '@/api/modules/ticket/ticket'
 import { useUserStore } from '@/store/user'
 
 export const useTicketStore = defineStore('ticket', {
@@ -10,7 +10,7 @@ export const useTicketStore = defineStore('ticket', {
       from: '上海',
       to: '北京',
       date: Date.now(),
-      options: ['standard'] as string[],
+      options: [] as string[],
       directOnly: false,
       sortAsc: true,
     } as SearchContext,
@@ -18,13 +18,13 @@ export const useTicketStore = defineStore('ticket', {
     loading: false,
     selectedTrip: null as Trip | null,
     selectedFareId: '' as string,
-    passengers: [] as { id: string; name: string; type: 'adult' | 'child' | 'student'; idNo?: string; idType?: string; phone?: string }[],
-    savedPassengers: [] as { id: string; userId: number; name: string; type: 'adult' | 'child' | 'student'; idNo?: string; idType?: string; phone?: string }[],
+    passengers: [] as { id: string, name: string, type: 'adult' | 'child' | 'student', idNo?: string, idType?: string, phone?: string }[],
+    savedPassengers: [] as { id: string, userId: number, name: string, type: 'adult' | 'child' | 'student', idNo?: string, idType?: string, phone?: string }[],
     contactPhone: '',
   }),
   persist: true,
   getters: {
-    savedPassengersForCurrentUser(state): { id: string; userId: number; name: string; type: 'adult' | 'child' | 'student'; idNo?: string; idType?: string; phone?: string }[] {
+    savedPassengersForCurrentUser(state): { id: string, userId: number, name: string, type: 'adult' | 'child' | 'student', idNo?: string, idType?: string, phone?: string }[] {
       const userStore = useUserStore()
       const currentUserId = userStore.userInfo?.userId
       if (!currentUserId || currentUserId === -1)
@@ -51,7 +51,11 @@ export const useTicketStore = defineStore('ticket', {
   },
   actions: {
     setSearch(payload: Partial<SearchContext>) {
-      this.search = { ...this.search, ...payload }
+      this.search = {
+        ...this.search,
+        ...payload,
+        options: payload.options ?? this.search.options,
+      }
     },
     swapCities() {
       const { from, to } = this.search
@@ -74,10 +78,10 @@ export const useTicketStore = defineStore('ticket', {
     chooseFare(fareId: string) {
       this.selectedFareId = fareId
     },
-    setPassengers(list: { id: string; name: string; type: 'adult' | 'child' | 'student'; idNo?: string }[]) {
+    setPassengers(list: { id: string, name: string, type: 'adult' | 'child' | 'student', idNo?: string }[]) {
       this.passengers = list
     },
-    addSavedPassenger(p: { id?: string; name: string; type: 'adult' | 'child' | 'student'; idNo?: string; idType?: string; phone?: string }) {
+    addSavedPassenger(p: { id?: string, name: string, type: 'adult' | 'child' | 'student', idNo?: string, idType?: string, phone?: string }) {
       const userStore = useUserStore()
       const userId = userStore.userInfo?.userId || -1
       const id = p.id || `sp_${Date.now()}`
@@ -85,7 +89,7 @@ export const useTicketStore = defineStore('ticket', {
       this.savedPassengers = [...this.savedPassengers.filter(x => x.id !== id), item]
       return id
     },
-    updateSavedPassenger(p: { id: string; name?: string; type?: 'adult' | 'child' | 'student'; idNo?: string; idType?: string; phone?: string }) {
+    updateSavedPassenger(p: { id: string, name?: string, type?: 'adult' | 'child' | 'student', idNo?: string, idType?: string, phone?: string }) {
       this.savedPassengers = this.savedPassengers.map(x => x.id === p.id ? { ...x, ...p } : x)
     },
     removeSavedPassenger(id: string) {

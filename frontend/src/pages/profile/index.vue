@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { IUploadSuccessInfo } from '@/api/types/login'
+import type { IUploadSuccessInfo } from '@/api/modules/auth/types'
 import type {
   FootprintItem,
   OrderItem,

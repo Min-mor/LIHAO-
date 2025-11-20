@@ -1,5 +1,5 @@
-import type { CommunityComment, CommunityDetail, CommunityPost } from '@/api/types/community'
-import { apiGetCommunityDetail, apiListCommunityComments, apiListCommunityPosts } from '@/api/community'
+import type { CommunityComment, CommunityDetail, CommunityPost } from '@/api/modules/community/types'
+import { apiGetCommunityDetail, apiListCommunityComments, apiListCommunityPosts } from '@/api/modules/community'
 import { communityPostsMock } from '@/mock/community'
 import { communityCommentsMock, getCommunityDetailMock } from '@/mock/communityDetail'
 

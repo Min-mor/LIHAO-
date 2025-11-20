@@ -3,7 +3,7 @@
  */
 import type { PublishNoteParams, PublishNoteResponse } from '@/mock/publish'
 import { mockPublishNote } from '@/mock/publish'
-import { apiPublishNote } from '@/api/publish'
+import { apiPublishNote } from '@/api/modules/publish'
 
 /**
  * 发布笔记

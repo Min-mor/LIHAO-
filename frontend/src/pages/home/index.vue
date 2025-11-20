@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { SwiperList } from 'wot-design-uni/components/wd-swiper/types'
-import type { ProductCard } from '@/api/types/product'
+import type { ProductCard } from '@/api/modules/product/types'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, ref, unref } from 'vue'
 import LoginPrompt from '@/components/LoginPrompt.vue'

@@ -1,5 +1,5 @@
-import type { DeletePassengerReq, GetPassengersReq, PassengerInfo, SavePassengerReq } from '@/api/types/passenger'
-import { deletePassenger as apiDeletePassenger, getPassengers as apiGetPassengers, savePassenger as apiSavePassenger } from '@/api/passenger'
+import type { DeletePassengerReq, GetPassengersReq, PassengerInfo, SavePassengerReq } from '@/api/modules/passenger/types'
+import { deletePassenger as apiDeletePassenger, getPassengers as apiGetPassengers, savePassenger as apiSavePassenger } from '@/api/modules/passenger'
 import { mockDeletePassenger, mockGetPassengers, mockSavePassenger } from '@/mock/passenger'
 
 /**

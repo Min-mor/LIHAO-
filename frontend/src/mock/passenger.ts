@@ -1,4 +1,4 @@
-import type { DeletePassengerReq, DeletePassengerRes, GetPassengersReq, GetPassengersRes, SavePassengerReq, SavePassengerRes } from '@/api/types/passenger'
+import type { DeletePassengerReq, DeletePassengerRes, GetPassengersReq, GetPassengersRes, SavePassengerReq, SavePassengerRes } from '@/api/modules/passenger/types'
 import { deletePassenger, getPassengersByUserId, savePassenger } from '@/mock/data/passengers'
 import { getActiveUserId } from '@/mock/data/users'
 

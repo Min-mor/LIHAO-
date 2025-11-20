@@ -1,5 +1,5 @@
 import type { ProfileMockData } from '@/mock/profile'
-import { apiGetProfileData } from '@/api/profile'
+import { apiGetProfileData } from '@/api/modules/profile'
 import { getProfileMockData } from '@/mock/profile'
 
 export async function getProfileData(userId?: string | number): Promise<ProfileMockData> {
