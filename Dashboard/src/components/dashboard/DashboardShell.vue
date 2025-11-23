@@ -13,7 +13,7 @@ const props = withDefaults(defineProps<{ role?: UserRole }>(), {
 
 const emit = defineEmits<{ (e: "logout"): void }>()
 
-const activePath = ref("/dashboard")
+const activePath = ref("/")
 
 const dataset = computed(() => dashboardMock[props.role])
 

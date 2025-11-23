@@ -28,14 +28,14 @@ import {
 
 const props = withDefaults(defineProps<{ role?: UserRole; activePath?: string }>(), {
   role: "merchant",
-  activePath: "/dashboard",
+  activePath: "/",
 })
 
 const emit = defineEmits<{ (e: "logout"): void }>()
 
 const navMap: Record<UserRole, { label: string; icon: any; path: string; badge?: number }[]> = {
   merchant: [
-    { label: "仪表盘", icon: LayoutDashboard, path: "/dashboard" },
+    { label: "仪表盘", icon: LayoutDashboard, path: "/" },
     { label: "商品管理", icon: Store, path: "/products" },
     { label: "订单中心", icon: ShoppingCart, path: "/orders" },
     { label: "销售报表", icon: BarChart3, path: "/reports" },
@@ -43,7 +43,7 @@ const navMap: Record<UserRole, { label: string; icon: any; path: string; badge?:
     { label: "联系管理员", icon: Megaphone, path: "/support" },
   ],
   admin: [
-    { label: "仪表盘", icon: LayoutDashboard, path: "/dashboard" },
+    { label: "仪表盘", icon: LayoutDashboard, path: "/" },
     { label: "商家管理", icon: UsersRound, path: "/merchants" },
     { label: "工单中心", icon: MessageCircle, path: "/tickets", badge: 3 },
     { label: "审核列表", icon: ClipboardList, path: "/approvals" },
@@ -76,7 +76,7 @@ const navMap: Record<UserRole, { label: string; icon: any; path: string; badge?:
                 asChild
                 :class="['menu-button', { 'menu-button--active': props.activePath === item.path }]"
               >
-                <a href="#" class="menu-link">
+                <a :href="item.path" class="menu-link">
                   <component :is="item.icon" class="menu-icon" />
                   <span>{{ item.label }}</span>
                 </a>
