@@ -1,4 +1,6 @@
+/// <reference path="../.astro/types.d.ts" />
 /// <reference types="astro/client" />
+/// <reference types="@astrojs/vue/client" />
 
 declare module "*.vue" {
   import type { DefineComponent } from "vue"
