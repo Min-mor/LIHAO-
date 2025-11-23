@@ -368,11 +368,13 @@ const visibilityOptions: Array<{ label: string, value: typeof visibility.value, 
   { label: '仅互关好友可见', value: 'friends', icon: 'user-talk' },
   { label: '仅自己可见', value: 'private', icon: 'lock-on' },
 ]
+const fallbackCoords = { latitude: 26.00585635868668, longitude: 119.4473524393012 }
 const nearbyLocations = ref<NearbyPlace[]>([])
 const nearbyLoading = ref(false)
 const nearbyError = ref('')
 const hasRequestedNearby = ref(false)
 const currentCoords = ref<{ latitude: number, longitude: number } | null>(null)
+const usingFallbackLocation = ref(false)
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -466,8 +468,7 @@ async function initNearby(force = false) {
     return
   try {
     nearbyError.value = ''
-    if (!currentCoords.value || force)
-      currentCoords.value = await getCurrentLocation()
+    await ensureCurrentCoords(force)
     await loadNearby({ keyword: locationSearch.value })
     hasRequestedNearby.value = true
   }
@@ -491,14 +492,14 @@ function handleSearch() {
 }
 
 async function loadNearby({ keyword }: { keyword?: string }) {
-  if (!currentCoords.value)
-    currentCoords.value = await getCurrentLocation()
+  await ensureCurrentCoords(false)
   nearbyLoading.value = true
   try {
+    const normalizedKeyword = keyword?.trim()
     nearbyLocations.value = await fetchNearbyPlaces({
-      keyword,
-      latitude: currentCoords.value.latitude,
-      longitude: currentCoords.value.longitude,
+      keyword: normalizedKeyword || undefined,
+      latitude: currentCoords.value!.latitude,
+      longitude: currentCoords.value!.longitude,
     })
     if (!nearbyLocations.value.length)
       nearbyError.value = '附近暂无推荐，试试输入其他关键词'
@@ -528,6 +529,22 @@ function handleNearbyError(error: unknown) {
   nearbyError.value = message.includes('auth') || message.includes('permission')
     ? '定位未授权，已经恢复常用地点'
     : message
+}
+
+async function ensureCurrentCoords(force = false) {
+  if (currentCoords.value && !force)
+    return
+  try {
+    const coords = await getCurrentLocation()
+    currentCoords.value = coords
+    usingFallbackLocation.value = false
+  }
+  catch (error) {
+    console.warn('[location] getLocation failed, use fallback coords', error)
+    currentCoords.value = { ...fallbackCoords }
+    usingFallbackLocation.value = true
+    nearbyError.value = '定位失败，已切换至默认地点，可自行搜索'
+  }
 }
 
 function formatDistance(distance?: number) {
@@ -1012,6 +1029,9 @@ $navbar-height: 88rpx;
 // 标记地点弹窗
 .publish__location-popup {
   max-height: 80vh;
+  width: 100vw;
+  max-width: 100%;
+  box-sizing: border-box;
   background: #fff;
   border-radius: 24rpx 24rpx 0 0;
   overflow: hidden;
@@ -1060,6 +1080,7 @@ $navbar-height: 88rpx;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .publish__location-search {
@@ -1086,12 +1107,18 @@ $navbar-height: 88rpx;
 
 .publish__location-list {
   flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-height: calc(80vh - 260rpx);
+  overflow-y: auto;
+  box-sizing: border-box;
   padding: 0 28rpx;
   padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
 }
 
 .publish__location-section {
   margin-bottom: 32rpx;
+  width: 100%;
 }
 
 .publish__location-section-header {

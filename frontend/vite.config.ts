@@ -1,3 +1,4 @@
+import type { ProxyOptions } from 'vite'
 import path from 'node:path'
 import process from 'node:process'
 import Uni from '@uni-helper/plugin-uni'
@@ -59,6 +60,23 @@ export default defineConfig(({ command, mode }) => {
     VITE_COPY_NATIVE_RES_ENABLE,
   } = env
   console.log('环境变量 env -> ', env)
+
+  const shouldProxyApi = JSON.parse(VITE_APP_PROXY_ENABLE)
+  const proxyConfig: Record<string, string | ProxyOptions> = {
+    '/tmap': {
+      target: 'https://apis.map.qq.com',
+      changeOrigin: true,
+      rewrite: path => path.replace(/^\/tmap/, ''),
+    },
+  }
+
+  if (shouldProxyApi) {
+    proxyConfig[VITE_APP_PROXY_PREFIX] = {
+      target: VITE_SERVER_BASEURL,
+      changeOrigin: true,
+      rewrite: path => path.replace(new RegExp(`^${VITE_APP_PROXY_PREFIX}`), ''),
+    }
+  }
 
   return defineConfig({
     envDir: './env', // 自定义env目录
@@ -173,17 +191,8 @@ export default defineConfig(({ command, mode }) => {
       host: '0.0.0.0',
       hmr: true,
       port: Number.parseInt(VITE_APP_PORT, 10),
-      // 仅 H5 端生效，其他端不生效（其他端走build，不走devServer)
-      proxy: JSON.parse(VITE_APP_PROXY_ENABLE)
-        ? {
-            [VITE_APP_PROXY_PREFIX]: {
-              target: VITE_SERVER_BASEURL,
-              changeOrigin: true,
-              // 后端有/api前缀则不做处理，没有则需要去掉
-              rewrite: path => path.replace(new RegExp(`^${VITE_APP_PROXY_PREFIX}`), ''),
-            },
-          }
-        : undefined,
+      // 仅 H5 端生效，其他端不生效（其他端走 build，不走 devServer)
+      proxy: proxyConfig,
     },
     esbuild: {
       drop: VITE_DELETE_CONSOLE === 'true' ? ['console', 'debugger'] : ['debugger'],

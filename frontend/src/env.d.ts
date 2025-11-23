@@ -25,12 +25,16 @@ interface ImportMetaEnv {
   readonly VITE_AUTH_MODE: 'single' | 'double'
   /** 接口模式，mock 或 real */
   readonly VITE_API_MODE: 'mock' | 'real'
-  /** 火车服务后端地址，例如 http://localhost:8080/api */
-  readonly VITE_API_BASE_TRAIN?: string
   /** 是否清除console */
   readonly VITE_DELETE_CONSOLE: string
   /** 腾讯位置服务 WebService Key */
   readonly VITE_TENCENT_MAP_KEY?: string
+  /** 短信供应商模式，none | vendor */
+  readonly VITE_SMS_VENDOR_MODE?: 'none' | 'vendor'
+  /** 短信供应商请求地址 */
+  readonly VITE_SMS_VENDOR_ENDPOINT?: string
+  /** 短信供应商模板中的 name 字段，可选 */
+  readonly VITE_SMS_VENDOR_NAME?: string
   // 更多环境变量...
 }
 

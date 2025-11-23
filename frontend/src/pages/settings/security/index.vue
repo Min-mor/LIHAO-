@@ -100,9 +100,9 @@ async function handlePasswordSendCode() {
   const success = await passwordSms.request()
   if (success) {
     const code = passwordSms.lastCode.value
-    showToast(code ? `验证码已发送（mock：${code}）` : '验证码已发送')
+    showToast(code ? `验证码已发送（调试码：${code}）` : '验证码已发送')
     if (code)
-      console.debug('[mock-sms] security password code:', code)
+      console.debug('[sms] security password code:', code)
   }
 }
 
@@ -175,9 +175,9 @@ async function handlePhoneSendCode() {
   const success = await phoneSms.request()
   if (success) {
     const code = phoneSms.lastCode.value
-    showToast(code ? `验证码已发送（mock：${code}）` : '验证码已发送')
+    showToast(code ? `验证码已发送（调试码：${code}）` : '验证码已发送')
     if (code)
-      console.debug('[mock-sms] security phone code:', code)
+      console.debug('[sms] security phone code:', code)
   }
 }
 

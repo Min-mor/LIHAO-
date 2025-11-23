@@ -31,6 +31,17 @@ const DEFAULT_RADIUS = 2000
 const DEFAULT_PAGE_SIZE = 20
 const DEFAULT_KEYWORD = '热门景点'
 
+let mapServiceBase = 'https://apis.map.qq.com'
+// #ifdef H5
+if (typeof window !== 'undefined' && window.location?.origin) {
+  mapServiceBase = `${window.location.origin}/tmap`
+}
+else {
+  mapServiceBase = '/tmap'
+}
+// #endif
+const MAP_SEARCH_URL = `${mapServiceBase}/ws/place/v1/search`
+
 function getTencentMapKey() {
   const key = import.meta.env.VITE_TENCENT_MAP_KEY
   if (!key)
@@ -64,7 +75,7 @@ export async function fetchNearbyPlaces(params: FetchNearbyParams): Promise<Near
 
   return new Promise((resolve, reject) => {
     uni.request({
-      url: 'https://apis.map.qq.com/ws/place/v1/search',
+      url: MAP_SEARCH_URL,
       method: 'GET',
       timeout: 10000,
       data: {

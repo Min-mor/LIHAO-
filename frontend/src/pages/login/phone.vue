@@ -2,11 +2,11 @@
 import { onLoad } from '@dcloudio/uni-app'
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useToast } from 'wot-design-uni'
+import { useSmsCode } from '@/hooks/useSmsCode'
+import { sendSecurityCode } from '@/service/security'
 import { useTokenStore } from '@/store/token'
 import { isPageTabbar, tabbarStore } from '@/tabbar/store'
 import { ensureDecodeURIComponent, HOME_PAGE } from '@/utils'
-import { useSmsCode } from '@/hooks/useSmsCode'
-import { sendSecurityCode } from '@/service/security'
 
 defineOptions({
   name: 'LoginPhonePage',
@@ -93,8 +93,8 @@ async function requestSmsCode() {
   if (ok) {
     form.code = ''
     if (sms.lastCode.value)
-      console.debug('[mock-sms] login code:', sms.lastCode.value)
-    showInfo({ msg: sms.lastCode.value ? `验证码已发送（mock：${sms.lastCode.value}）` : '验证码已发送' })
+      console.debug('[sms] code(debug):', sms.lastCode.value)
+    showInfo({ msg: sms.lastCode.value ? `验证码已发送（调试码：${sms.lastCode.value}）` : '验证码已发送' })
     return true
   }
   return false
@@ -105,9 +105,9 @@ async function handleSendCode() {
     return
   }
   if (await requestSmsCode()) {
-    showInfo({ msg: sms.lastCode.value ? `验证码已重新发送（mock：${sms.lastCode.value}）` : '验证码已重新发送' })
+    showInfo({ msg: sms.lastCode.value ? `验证码已重新发送（调试码：${sms.lastCode.value}）` : '验证码已重新发送' })
     if (sms.lastCode.value)
-      console.debug('[mock-sms] login code (resend):', sms.lastCode.value)
+      console.debug('[sms] code(debug,resend):', sms.lastCode.value)
   }
 }
 
@@ -127,13 +127,11 @@ async function handleSubmit() {
       showInfo({ msg: '请输入验证码' })
       return
     }
-    if (!sms.lastCode.value) {
-      showInfo({ msg: '请先获取验证码' })
-      return
-    }
-    if (form.code !== sms.lastCode.value) {
-      showInfo({ msg: '验证码不正确' })
-      return
+    if (sms.lastCode.value) {
+      if (form.code !== sms.lastCode.value) {
+        showInfo({ msg: '验证码不正确' })
+        return
+      }
     }
   }
   else if (!form.password) {
