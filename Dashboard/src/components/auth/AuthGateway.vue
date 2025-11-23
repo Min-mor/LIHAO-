@@ -29,10 +29,6 @@ function handleLogout() {
     <div v-else class="auth-gateway__login">
       <LoginShell :redirect-on-success="false" @login-success="handleLoginSuccess" />
     </div>
-
-    <button v-if="session" type="button" class="auth-gateway__logout" @click="handleLogout">
-      退出登录
-    </button>
   </div>
 </template>
 
@@ -44,9 +40,5 @@ function handleLogout() {
 
 .auth-gateway__login {
   @apply min-h-screen;
-}
-
-.auth-gateway__logout {
-  @apply fixed bottom-6 right-6 rounded-full bg-foreground/80 px-4 py-2 text-sm font-medium text-background shadow-lg transition hover:bg-foreground;
 }
 </style>

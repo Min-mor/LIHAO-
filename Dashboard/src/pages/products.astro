@@ -1,0 +1,11 @@
+---
+import Layout from '../layouts/Layout.astro'
+import ProductsShell from '@/components/merchants/ProductsShell.vue'
+import type { UserRole } from '@/components/dashboard/types'
+
+const role: UserRole = 'merchant'
+---
+
+<Layout title="商品管理 - Trip 控制台">
+  <ProductsShell client:load role={role} activePath="/products" />
+</Layout>
