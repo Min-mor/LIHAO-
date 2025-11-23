@@ -11,6 +11,8 @@ const props = withDefaults(defineProps<{ role?: UserRole }>(), {
   role: "merchant",
 })
 
+const emit = defineEmits<{ (e: "logout"): void }>()
+
 const activePath = ref("/dashboard")
 
 const dataset = computed(() => dashboardMock[props.role])
@@ -62,7 +64,7 @@ const reminderToneMap: Record<ReminderItem["tone"], ReminderToneMeta> = {
 
 <template>
   <SidebarProvider class="dashboard-shell">
-    <AppSidebar :role="props.role" :active-path="activePath" />
+    <AppSidebar :role="props.role" :active-path="activePath" @logout="emit('logout')" />
     <SidebarInset class="dashboard-inset">
       <div class="dashboard-grid">
         <div class="dashboard-main">

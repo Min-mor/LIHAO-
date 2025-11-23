@@ -1,11 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro'
-import DashboardShell from '@/components/dashboard/DashboardShell.vue'
-import type { UserRole } from '@/components/dashboard/types'
-
-const role: UserRole = 'admin'
+import AuthGateway from '@/components/auth/AuthGateway.vue'
 ---
 
 <Layout title="Trip 后台仪表盘">
-	<DashboardShell client:load role={role} />
+	<AuthGateway client:load />
 </Layout>

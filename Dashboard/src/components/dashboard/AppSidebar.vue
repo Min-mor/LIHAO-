@@ -31,6 +31,8 @@ const props = withDefaults(defineProps<{ role?: UserRole; activePath?: string }>
   activePath: "/dashboard",
 })
 
+const emit = defineEmits<{ (e: "logout"): void }>()
+
 const navMap: Record<UserRole, { label: string; icon: any; path: string; badge?: number }[]> = {
   merchant: [
     { label: "仪表盘", icon: LayoutDashboard, path: "/dashboard" },
@@ -90,7 +92,7 @@ const navMap: Record<UserRole, { label: string; icon: any; path: string; badge?:
     <SidebarFooter class="sidebar-footer">
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton class="logout-button">
+          <SidebarMenuButton class="logout-button" @click="emit('logout')">
             <LogOut class="menu-icon" />
             <span>登出</span>
           </SidebarMenuButton>

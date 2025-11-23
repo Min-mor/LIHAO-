@@ -19,7 +19,7 @@ const pagePaddingBottom = computed(() => `calc(200rpx + ${(safeAreaInsets?.botto
 
 <template>
   <view class="romantic" :style="{ paddingTop: pagePaddingTop, paddingBottom: pagePaddingBottom }">
-    <view class="romantic__header">
+    <!-- <view class="romantic__header">
       <text class="romantic__title">心动精选</text>
       <text class="romantic__subtitle">为你甄选充满惊喜的主题活动</text>
     </view>
@@ -30,7 +30,7 @@ const pagePaddingBottom = computed(() => `calc(200rpx + ${(safeAreaInsets?.botto
         <text class="romantic__item-title">心动主题 {{ index }}</text>
         <text class="romantic__item-desc">探索更多浪漫灵感，等待下次出发。</text>
       </view>
-    </view>
+    </view> -->
   </view>
 </template>
 
@@ -42,47 +42,5 @@ const pagePaddingBottom = computed(() => `calc(200rpx + ${(safeAreaInsets?.botto
   display: flex;
   flex-direction: column;
   gap: 32rpx;
-}
-
-.romantic__header {
-  display: flex;
-  flex-direction: column;
-  gap: 12rpx;
-}
-
-.romantic__title {
-  font-size: 44rpx;
-  font-weight: 600;
-}
-
-.romantic__subtitle {
-  font-size: 26rpx;
-  color: rgba(22, 24, 35, 0.7);
-}
-
-.romantic__grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24rpx;
-}
-
-.romantic__item {
-  display: flex;
-  flex-direction: column;
-  gap: 12rpx;
-  padding: 28rpx;
-  border-radius: 28rpx;
-  background: linear-gradient(135deg, rgba(160, 212, 196, 0.2), rgba(50, 89, 71, 0.15));
-  color: #161823;
-}
-
-.romantic__item-title {
-  font-size: 32rpx;
-  font-weight: 600;
-}
-
-.romantic__item-desc {
-  font-size: 26rpx;
-  color: rgba(22, 24, 35, 0.7);
 }
 </style>

@@ -16,6 +16,8 @@ import {
   ShoppingCart,
   Store,
 } from "lucide-vue-next"
+import { buildSeriesFromArray } from "@/mock/data/charts"
+import { getProfileByRole } from "@/mock/data/users"
 
 interface DashboardDataset {
   statCards: StatCard[]
@@ -59,30 +61,14 @@ export const dashboardMock: Record<UserRole, DashboardDataset> = {
         title: "近 7 天销售额",
         subtitle: "单位：万元",
         type: "bar",
-        data: [
-          { label: "周一", value: 12 },
-          { label: "周二", value: 18 },
-          { label: "周三", value: 16 },
-          { label: "周四", value: 22 },
-          { label: "周五", value: 28 },
-          { label: "周六", value: 24 },
-          { label: "周日", value: 14 },
-        ],
+        data: buildSeriesFromArray([12, 18, 16, 22, 28, 24, 14]),
       },
       {
         id: "orders",
         title: "近 7 天订单数",
         subtitle: "单位：单",
         type: "line",
-        data: [
-          { label: "周一", value: 220 },
-          { label: "周二", value: 260 },
-          { label: "周三", value: 210 },
-          { label: "周四", value: 340 },
-          { label: "周五", value: 420 },
-          { label: "周六", value: 360 },
-          { label: "周日", value: 260 },
-        ],
+        data: buildSeriesFromArray([220, 260, 210, 340, 420, 360, 260]),
       },
     ],
     quickLinks: [
@@ -90,12 +76,7 @@ export const dashboardMock: Record<UserRole, DashboardDataset> = {
       { id: "ql-2", label: "查看订单", action: "进入" },
       { id: "ql-3", label: "下载报表", action: "导出" },
     ],
-    profile: {
-      userId: "merchant-001",
-      username: "山川旅行社",
-      role: "商家用户",
-      avatar: null,
-    },
+    profile: getProfileByRole("merchant"),
     reminders: [
       {
         id: "mr-1",
@@ -161,15 +142,7 @@ export const dashboardMock: Record<UserRole, DashboardDataset> = {
         title: "近 7 天预订量",
         subtitle: "单位：单",
         type: "bar",
-        data: [
-          { label: "周一", value: 180 },
-          { label: "周二", value: 220 },
-          { label: "周三", value: 300 },
-          { label: "周四", value: 260 },
-          { label: "周五", value: 380 },
-          { label: "周六", value: 280 },
-          { label: "周日", value: 200 },
-        ],
+        data: buildSeriesFromArray([180, 220, 300, 260, 380, 280, 200]),
       },
     ],
     quickLinks: [
@@ -177,12 +150,7 @@ export const dashboardMock: Record<UserRole, DashboardDataset> = {
       { id: "ql-2", label: "发布平台公告", action: "新建" },
       { id: "ql-3", label: "营销活动配置", action: "进入" },
     ],
-    profile: {
-      userId: "admin-ops-07",
-      username: "运营值守专员",
-      role: "管理员",
-      avatar: null,
-    },
+    profile: getProfileByRole("admin"),
     reminders: [
       {
         id: "ar-1",
