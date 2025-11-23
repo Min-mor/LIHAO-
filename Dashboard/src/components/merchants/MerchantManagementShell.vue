@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import type { UserRole } from "@/components/dashboard/types"
 import AppSidebar from "@/components/dashboard/AppSidebar.vue"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import Pagination from "@/components/ui/pagination/Pagination.vue"
+import type { MerchantDetail } from "@/mock/data/merchants"
 import { merchantManagementMock } from "@/mock/data/merchants"
 
 const props = withDefaults(defineProps<{ role?: UserRole; activePath?: string }>(), {
@@ -11,12 +13,21 @@ const props = withDefaults(defineProps<{ role?: UserRole; activePath?: string }>
 })
 
 const dataset = merchantManagementMock
+const defaultLogo = "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=120&q=60"
 
-const selectedMerchantId = ref(dataset.details[0]?.id ?? "")
+type MerchantStatus = MerchantDetail["status"]
 
-const selectedMerchant = computed(() =>
-  dataset.details.find(detail => detail.id === selectedMerchantId.value) ?? dataset.details[0],
-)
+const merchants = ref<MerchantDetail[]>([...dataset.details])
+const merchantApplications = computed(() => merchants.value.filter((merchant: MerchantDetail) => merchant.status === "pending"))
+
+const merchantPage = ref(1)
+const merchantPageSize = ref(6)
+
+const selectedMerchantId = ref<string>(merchants.value[0]?.id ?? "")
+
+const selectedMerchant = computed(() => merchants.value.find((detail: MerchantDetail) => detail.id === selectedMerchantId.value))
+
+const selectedMerchantLogo = computed(() => selectedMerchant.value?.logo || defaultLogo)
 
 const statusBadgeClass = computed(() => {
   switch (selectedMerchant.value?.status) {
@@ -24,6 +35,9 @@ const statusBadgeClass = computed(() => {
       return "bg-emerald-50 text-emerald-600"
     case "pending":
       return "bg-amber-50 text-amber-600"
+    case "suspended":
+    case "inactive":
+      return "bg-slate-200 text-slate-600"
     default:
       return "bg-muted text-muted-foreground"
   }
@@ -32,7 +46,134 @@ const statusBadgeClass = computed(() => {
 const merchantStatusClass = (status: string) => {
   if (status === "active") return "text-emerald-600"
   if (status === "pending") return "text-amber-600"
+  if (status === "suspended" || status === "inactive") return "text-rose-500"
   return "text-muted-foreground"
+}
+
+const statusAvatarClass = computed(() => {
+  switch (selectedMerchant.value?.status) {
+    case "active":
+      return {
+        ring: "avatar-ring--success",
+        dot: "avatar-dot--success",
+      }
+    case "pending":
+      return {
+        ring: "avatar-ring--warning",
+        dot: "avatar-dot--warning",
+      }
+    default:
+      return {
+        ring: "avatar-ring--muted",
+        dot: "avatar-dot--muted",
+      }
+  }
+})
+
+const merchantStatusLabel = (status: string) => {
+  switch (status) {
+    case "active":
+      return "正常"
+    case "pending":
+      return "待审核"
+    case "suspended":
+    case "inactive":
+      return "暂停"
+    default:
+      return status
+  }
+}
+
+type MerchantActionType = "approve" | "reject" | "suspend" | "activate" | "delete"
+
+interface MerchantAction {
+  label: string
+  action: MerchantActionType
+  variant?: "primary" | "danger" | "ghost"
+}
+
+const merchantActionMap: Record<MerchantStatus, MerchantAction[]> = {
+  active: [{ label: "封锁", action: "suspend", variant: "danger" }],
+  pending: [
+    { label: "拒绝", action: "reject", variant: "ghost" },
+    { label: "通过", action: "approve", variant: "primary" },
+  ],
+  suspended: [
+    { label: "启用", action: "activate", variant: "primary" },
+    { label: "删除", action: "delete", variant: "danger" },
+  ],
+  inactive: [
+    { label: "启用", action: "activate", variant: "primary" },
+    { label: "删除", action: "delete", variant: "danger" },
+  ],
+}
+
+const availableActions = computed(() => {
+  const status = selectedMerchant.value?.status ?? "active"
+  return merchantActionMap[status] || []
+})
+
+const updateMerchantStatus = (merchantId: string, nextStatus: MerchantStatus) => {
+  merchants.value = merchants.value.map((merchant: MerchantDetail) =>
+    merchant.id === merchantId ? { ...merchant, status: nextStatus } : merchant,
+  )
+}
+
+const deleteMerchant = (merchantId: string) => {
+  merchants.value = merchants.value.filter((merchant: MerchantDetail) => merchant.id !== merchantId)
+  if (selectedMerchantId.value === merchantId) {
+    selectedMerchantId.value = merchants.value[0]?.id ?? ""
+  }
+}
+
+watch(
+  () => merchants.value.length,
+  () => {
+    const maxPage = Math.max(1, Math.ceil(merchants.value.length / merchantPageSize.value))
+    if (merchantPage.value > maxPage) merchantPage.value = maxPage
+  },
+  { immediate: true },
+)
+
+const paginatedMerchants = computed(() => {
+  const start = (merchantPage.value - 1) * merchantPageSize.value
+  return merchants.value.slice(start, start + merchantPageSize.value)
+})
+
+const triggerMerchantAction = (merchantId: string, action: MerchantActionType) => {
+  switch (action) {
+    case "approve":
+      updateMerchantStatus(merchantId, "active")
+      break
+    case "reject":
+      updateMerchantStatus(merchantId, "suspended")
+      break
+    case "suspend":
+      updateMerchantStatus(merchantId, "suspended")
+      break
+    case "activate":
+      updateMerchantStatus(merchantId, "active")
+      break
+    case "delete":
+      deleteMerchant(merchantId)
+      break
+    default:
+      break
+  }
+}
+
+const handleMerchantAction = (action: MerchantActionType) => {
+  if (!selectedMerchant.value) return
+  triggerMerchantAction(selectedMerchant.value.id, action)
+}
+
+const handleApplicationAction = (merchantId: string, action: MerchantActionType) => {
+  triggerMerchantAction(merchantId, action)
+  selectedMerchantId.value = merchantId
+}
+
+const handleSelectMerchant = (merchantId: string) => {
+  selectedMerchantId.value = merchantId
 }
 </script>
 
@@ -63,20 +204,34 @@ const merchantStatusClass = (status: string) => {
                 <p class="section-caption">最近提交的入驻申请，请尽快处理。</p>
               </div>
             </header>
-            <div class="application-list">
+            <div class="application-list" v-if="merchantApplications.length">
               <article
-                v-for="application in dataset.applications"
+                v-for="application in merchantApplications"
                 :key="application.id"
                 class="application-card"
               >
-                <p class="application-name">{{ application.name }}</p>
-                <p class="application-location">{{ application.location }}</p>
-                <p class="application-desc">{{ application.description }}</p>
+                <div class="application-card__header">
+                  <div class="application-logo">
+                    <img :src="application.logo || defaultLogo" :alt="`${application.name} logo`" />
+                  </div>
+                  <div>
+                    <p class="application-name">{{ application.name }}</p>
+                    <p class="application-location">{{ application.location }}</p>
+                  </div>
+                </div>
+                <p class="application-desc">{{ application.pitch }}</p>
                 <div class="application-actions">
-                  <button class="ghost-danger" type="button">拒绝</button>
-                  <button class="primary-outline" type="button">通过</button>
+                  <button class="ghost-danger" type="button" @click="handleApplicationAction(application.id, 'reject')">
+                    拒绝
+                  </button>
+                  <button class="primary-outline" type="button" @click="handleApplicationAction(application.id, 'approve')">
+                    通过
+                  </button>
                 </div>
               </article>
+            </div>
+            <div v-else class="application-empty">
+              <p>暂无待审核商家，保持关注～</p>
             </div>
           </section>
 
@@ -95,36 +250,49 @@ const merchantStatusClass = (status: string) => {
                 <span>入驻时间</span>
                 <span>状态</span>
               </div>
-              <button
-                v-for="merchant in dataset.merchants"
-                :key="merchant.id"
-                class="table-row"
-                :class="{ 'table-row--active': merchant.id === selectedMerchantId }"
-                type="button"
-                @click="selectedMerchantId = merchant.id"
-              >
-                <span class="table-cell">
-                  <span class="merchant-name">{{ merchant.name }}</span>
-                  <span class="merchant-id">{{ merchant.id }}</span>
-                </span>
-                <span>{{ merchant.contact }}</span>
-                <span>{{ merchant.joinedAt }}</span>
-                <span :class="merchantStatusClass(merchant.status)">
-                  {{ merchant.status === 'active' ? '正常' : merchant.status === 'pending' ? '待审核' : '暂停' }}
-                </span>
-              </button>
+              <template v-if="paginatedMerchants.length">
+                <button
+                  v-for="merchant in paginatedMerchants"
+                  :key="merchant.id"
+                  class="table-row"
+                  :class="{ 'table-row--active': merchant.id === selectedMerchantId }"
+                  type="button"
+                  @click="handleSelectMerchant(merchant.id)"
+                >
+                  <span class="table-cell">
+                    <span class="merchant-name">{{ merchant.name }}</span>
+                    <span class="merchant-id">{{ merchant.id }}</span>
+                  </span>
+                  <span>{{ merchant.contactPerson }}</span>
+                  <span>{{ merchant.joinedAt }}</span>
+                  <span :class="merchantStatusClass(merchant.status)">
+                    {{ merchantStatusLabel(merchant.status) }}
+                  </span>
+                </button>
+              </template>
+              <div v-else class="table-empty">暂无商家记录</div>
+              <footer class="table-footer">
+                <p>共 {{ merchants.length }} 名商家，展示 {{ merchantPageSize }} 条/页</p>
+                <div class="table-footer__pager">
+                  <Pagination :total="merchants.length" :page-size="merchantPageSize" v-model:page="merchantPage" />
+                </div>
+              </footer>
             </div>
           </section>
         </div>
 
         <aside class="merchant-side" v-if="selectedMerchant">
           <div class="surface-card detail-card">
-            <div class="detail-header">
-              <div>
-                <p class="detail-name">{{ selectedMerchant.name }}</p>
-                <p class="detail-location">{{ selectedMerchant.location }}</p>
+            <div class="detail-hero">
+              <div class="detail-avatar" :class="statusAvatarClass.ring">
+                <span class="detail-avatar__dot" :class="statusAvatarClass.dot"></span>
+                <img :src="selectedMerchantLogo" :alt="selectedMerchant.name" />
               </div>
-              <span class="detail-status" :class="statusBadgeClass">{{ selectedMerchant.status }}</span>
+              <div class="detail-header">
+                <p class="detail-name">{{ selectedMerchant.name }}</p>
+                <p class="detail-pitch" v-if="selectedMerchant.pitch">{{ selectedMerchant.pitch }}</p>
+              </div>
+              <span class="detail-status" :class="statusBadgeClass">{{ merchantStatusLabel(selectedMerchant.status) }}</span>
             </div>
             <dl class="detail-grid">
               <div>
@@ -149,12 +317,30 @@ const merchantStatusClass = (status: string) => {
               </div>
               <div>
                 <dt>入驻日期</dt>
-                <dd>{{ selectedMerchant.joinedOn }}</dd>
+                <dd>{{ selectedMerchant.joinedAt }}</dd>
               </div>
             </dl>
             <div class="detail-actions">
-              <button class="primary-btn" type="button">编辑资料</button>
-              <button class="ghost-btn" type="button">发送提醒</button>
+              <div class="detail-actions__cta">
+                <button class="primary-btn" type="button">编辑资料</button>
+                <button class="ghost-btn" type="button">发送提醒</button>
+              </div>
+              <div class="detail-actions__ops">
+                <div class="action-buttons" v-if="availableActions.length">
+                  <button
+                    v-for="action in availableActions"
+                    :key="action.label"
+                    type="button"
+                    :class="['action-btn',
+                             action.variant === 'primary' && 'action-btn--primary',
+                             action.variant === 'danger' && 'action-btn--danger']"
+                    @click="handleMerchantAction(action.action)"
+                  >
+                    {{ action.label }}
+                  </button>
+                </div>
+                <p v-else class="action-empty">当前状态暂无可执行操作。</p>
+              </div>
             </div>
           </div>
         </aside>
@@ -174,7 +360,7 @@ const merchantStatusClass = (status: string) => {
 }
 
 .merchant-grid {
-  @apply grid gap-6 px-4 py-6 lg:px-10 xl:grid-cols-[minmax(0,1fr)_360px];
+  @apply grid gap-6 px-4 py-6 lg:px-10 xl:grid-cols-[minmax(0,1fr)_400px];
 }
 
 .merchant-main {
@@ -238,7 +424,19 @@ const merchantStatusClass = (status: string) => {
 }
 
 .application-card {
-  @apply flex flex-col gap-2 rounded-2xl border border-border/70 px-5 py-4;
+  @apply flex flex-col gap-3 rounded-2xl border border-border/70 px-5 py-4;
+}
+
+.application-card__header {
+  @apply flex items-center gap-3;
+}
+
+.application-logo {
+  @apply flex size-14 items-center justify-center rounded-2xl bg-muted/70;
+}
+
+.application-logo img {
+  @apply size-12 rounded-xl object-cover;
 }
 
 .application-name {
@@ -263,6 +461,10 @@ const merchantStatusClass = (status: string) => {
 
 .primary-outline {
   @apply flex-1 rounded-2xl border border-primary px-4 py-2 text-sm font-semibold text-primary;
+}
+
+.application-empty {
+  @apply rounded-2xl border border-dashed border-border px-5 py-6 text-center text-sm text-muted-foreground;
 }
 
 .table-shell {
@@ -303,23 +505,47 @@ const merchantStatusClass = (status: string) => {
 }
 
 .merchant-side {
-  @apply hidden xl:block;
+  @apply hidden xl:flex xl:flex-col;
 }
 
 .detail-card {
-  @apply h-full rounded-[32px] border border-border/60 px-6 py-6;
+  @apply flex h-full flex-col gap-6 rounded-[36px] border border-border/60 px-8 py-8;
+}
+
+.detail-hero {
+  @apply flex flex-col items-center gap-4 text-center;
+}
+
+.detail-avatar {
+  @apply relative flex size-32 items-center justify-center rounded-full p-1 transition;
+}
+
+.detail-avatar img {
+  @apply size-full rounded-full object-cover;
+}
+
+.detail-avatar__dot {
+  @apply absolute -bottom-1 -right-1 size-3 rounded-full border-2 border-white;
 }
 
 .detail-header {
-  @apply flex items-center justify-between;
+  @apply flex flex-col items-center gap-1;
 }
 
 .detail-name {
-  @apply text-xl font-semibold;
+  @apply text-2xl font-semibold;
 }
 
 .detail-location {
   @apply text-sm text-muted-foreground;
+}
+
+.detail-role {
+  @apply text-sm font-medium text-primary;
+}
+
+.detail-pitch {
+  @apply mt-2 text-sm text-muted-foreground;
 }
 
 .detail-status {
@@ -327,7 +553,7 @@ const merchantStatusClass = (status: string) => {
 }
 
 .detail-grid {
-  @apply mt-6 grid grid-cols-1 gap-4 text-sm;
+  @apply grid grid-cols-1 gap-4 text-sm;
 }
 
 .detail-grid dt {
@@ -338,11 +564,79 @@ const merchantStatusClass = (status: string) => {
   @apply font-semibold text-foreground;
 }
 
-.detail-actions {
-  @apply mt-6 flex flex-col gap-3;
+.action-card {
+  @apply mt-4 rounded-[32px] border border-border/60 px-6 py-6;
 }
 
-.detail-actions .ghost-btn {
-  @apply justify-center;
+.action-header {
+  @apply mb-4;
+}
+
+.action-title {
+  @apply text-lg font-semibold;
+}
+
+.action-caption {
+  @apply text-sm text-muted-foreground;
+}
+
+.detail-actions {
+  @apply mt-auto flex flex-col gap-4;
+}
+
+.detail-actions__cta {
+  @apply flex flex-wrap items-center justify-center gap-4;
+}
+
+.detail-actions__cta button {
+  @apply min-w-[140px];
+}
+
+.detail-actions__ops {
+  @apply flex flex-col items-center gap-3 text-center;
+}
+
+.action-buttons {
+  @apply flex w-full flex-col gap-3;
+}
+
+.action-btn {
+  @apply rounded-2xl border border-border px-4 py-2 text-center text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary;
+}
+
+.action-btn--primary {
+  @apply border-primary bg-primary text-white hover:bg-primary/90;
+}
+
+.action-btn--danger {
+  @apply border-destructive/50 text-destructive hover:border-destructive hover:text-destructive;
+}
+
+.action-empty {
+  @apply text-sm text-muted-foreground;
+}
+
+.avatar-ring--success {
+  box-shadow: 0 0 0 8px rgb(34 197 94 / 0.16);
+}
+
+.avatar-ring--warning {
+  box-shadow: 0 0 0 8px rgb(251 191 36 / 0.22);
+}
+
+.avatar-ring--muted {
+  box-shadow: 0 0 0 8px rgb(148 163 184 / 0.18);
+}
+
+.avatar-dot--success {
+  @apply bg-emerald-500;
+}
+
+.avatar-dot--warning {
+  @apply bg-amber-500;
+}
+
+.avatar-dot--muted {
+  @apply bg-slate-400;
 }
 </style>

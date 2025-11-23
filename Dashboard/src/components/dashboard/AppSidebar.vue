@@ -8,7 +8,7 @@ import {
   Megaphone,
   UsersRound,
   TrendingUp,
-  ClipboardList,
+  Settings,
   LogOut,
 } from "lucide-vue-next"
 import type { UserRole } from "./types"
@@ -41,14 +41,15 @@ const navMap: Record<UserRole, { label: string; icon: any; path: string; badge?:
     { label: "销售报表", icon: BarChart3, path: "/reports" },
     { label: "工单中心", icon: MessageCircle, path: "/tickets", badge: 2 },
     { label: "联系管理员", icon: Megaphone, path: "/support" },
+    { label: "设置", icon: Settings, path: "/settings" },
   ],
   admin: [
     { label: "仪表盘", icon: LayoutDashboard, path: "/" },
     { label: "商家管理", icon: UsersRound, path: "/merchants" },
     { label: "工单中心", icon: MessageCircle, path: "/tickets", badge: 3 },
-    { label: "审核列表", icon: ClipboardList, path: "/approvals" },
     { label: "公告中心", icon: Megaphone, path: "/announcements" },
     { label: "营销活动", icon: TrendingUp, path: "/campaigns" },
+    { label: "设置", icon: Settings, path: "/settings" },
   ],
 }
 </script>
