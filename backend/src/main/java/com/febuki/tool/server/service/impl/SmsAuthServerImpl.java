@@ -49,7 +49,7 @@ public class SmsAuthServerImpl extends ServiceImpl<SMSAuthMapper, SMSAuth> imple
      * 发送短信验证码
      */
     @Override
-    public boolean sendSmsCode(String phone) {
+    public String sendSmsCode(String phone) {
         log.info("开始发送短信验证码 - 手机号: {}", phone);
 
         // 验证手机号格式
@@ -68,17 +68,17 @@ public class SmsAuthServerImpl extends ServiceImpl<SMSAuthMapper, SMSAuth> imple
             boolean sendResult = mockSendSms(phone, code);
             if (!sendResult) {
                 log.error("短信发送失败 - 手机号: {}", phone);
-                return false;
+                return null;
             }
 
             // 存储验证码到缓存
             smsCodeCacheServer.saveSmsCode(phone, code);
             log.info("短信验证码发送成功 - 手机号: {}", phone);
 
-            return true;
+            return code;
         } catch (Exception e) {
             log.error("发送短信验证码异常 - 手机号: {}", phone, e);
-            return false;
+            return null;
         }
     }
 

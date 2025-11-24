@@ -6,6 +6,15 @@ interface MockUser {
   role: UserRole
 }
 
+export async function mockTrustedLogin(phone: string) {
+  const user = ensureUser(phone)
+  return {
+    token: createToken(user.phone, user.role),
+    role: user.role,
+    isNew: !user.password,
+  }
+}
+
 const mockUsers: MockUser[] = [
   {
     phone: "13800138000",

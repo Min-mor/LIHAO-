@@ -35,13 +35,14 @@ public class SmsAuthController {
             @RequestParam String phone
     ) {
         log.info("发送短信验证码: {}", phone);
-        boolean success = smsAuthService.sendSmsCode(phone);
-        if (success) {
+        String code = smsAuthService.sendSmsCode(phone);
+        if (code != null) {
             log.info("验证码发送成功: {}", phone);
             return ResponseEntity.status(HttpStatus.OK).body(
                     MapUtils.of(
                             MapUtils.Pair.of("code", HttpStatus.OK.value()),
-                            MapUtils.Pair.of("message", "验证码发送成功")
+                            MapUtils.Pair.of("message", "验证码发送成功"),
+                            MapUtils.Pair.of("smsCode", code)
                     )
             );
         } else {

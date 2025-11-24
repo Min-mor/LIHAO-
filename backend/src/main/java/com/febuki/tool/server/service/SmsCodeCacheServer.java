@@ -35,5 +35,5 @@ public interface SmsCodeCacheServer {
     /**
      * 检查手机号是否已发送验证码
      */
-    public boolean hasSmsCode(String phone);
+    boolean hasSmsCode(String phone);
 }

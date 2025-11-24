@@ -13,7 +13,7 @@ public interface SmsAuthServer {
     /**
      * 发送短信验证码
      */
-    boolean sendSmsCode(String phone);
+    String sendSmsCode(String phone);
 
     /**
      * 验证短信验证码
