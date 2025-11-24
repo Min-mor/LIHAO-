@@ -504,6 +504,14 @@ const handleSelectMerchant = (merchantId: string) => {
   @apply flex flex-col divide-y divide-border/60;
 }
 
+.table-footer {
+  @apply flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4 text-sm text-muted-foreground;
+}
+
+.table-footer__pager {
+  @apply flex flex-1 justify-end;
+}
+
 .table-head,
 .table-row {
   @apply grid grid-cols-[1.4fr_1fr_1fr_0.7fr] items-center gap-3 px-2 py-3 text-left;
@@ -519,6 +527,18 @@ const handleSelectMerchant = (merchantId: string) => {
 
 .table-row--active {
   @apply bg-primary/5 text-primary;
+}
+
+.merchant-pagination {
+  @apply !mx-0 !w-auto items-center gap-2 justify-end;
+}
+
+.pagination-button {
+  @apply inline-flex items-center rounded-full border border-border px-4 py-1 text-xs font-medium text-muted-foreground transition hover:text-foreground;
+}
+
+.pagination-number {
+  @apply inline-flex size-8 items-center justify-center rounded-full text-sm font-semibold text-muted-foreground aria-[current=true]:bg-primary aria-[current=true]:text-primary-foreground;
 }
 
 .table-cell {
