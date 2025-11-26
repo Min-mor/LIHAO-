@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import type { UserRole } from "@/components/dashboard/types"
-import AppSidebar from "@/components/dashboard/AppSidebar.vue"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import {
   Pagination,
   PaginationContent,
@@ -13,19 +11,44 @@ import {
 } from "@/components/ui/pagination"
 import type { TicketRecord, TicketStatus } from "@/mock/data/tickets"
 import { ticketCenterMock } from "@/mock/data/tickets"
+import TicketWorkspace from "@/components/tickets/TicketWorkspace.vue"
 
-const props = withDefaults(defineProps<{ role?: UserRole; activePath?: string }>(), {
-  role: "admin",
-  activePath: "/tickets",
+const props = withDefaults(
+  defineProps<{
+    role?: UserRole
+    activePath?: string
+    ticketsData?: TicketRecord[]
+    pageSize?: number
+    onRefresh?: () => Promise<void> | void
+    onExport?: (tickets: TicketRecord[]) => void
+  }>(),
+  {
+    role: "admin",
+    activePath: "/tickets",
+    pageSize: 5,
+  },
+)
+
+const ticketsSource = computed(() => props.ticketsData ?? ticketCenterMock.tickets)
+const tickets = ref<TicketRecord[]>([...ticketsSource.value])
+
+watch(ticketsSource, (next) => {
+  tickets.value = [...next]
 })
-
-const dataset = ticketCenterMock
-const tickets = ref<TicketRecord[]>([...dataset.tickets])
 
 const keyword = ref("")
 const statusFilter = ref<"all" | TicketStatus>("all")
 const page = ref(1)
-const pageSize = ref(5)
+const pageSize = ref(props.pageSize)
+
+watch(
+  () => props.pageSize,
+  (next) => {
+    if (typeof next === "number" && next > 0) {
+      pageSize.value = next
+    }
+  },
+)
 
 const statusMeta: Record<TicketStatus, { label: string; badge: string }> = {
   pending: { label: "待处理", badge: "status-pill status-pill--pending" },
@@ -61,6 +84,17 @@ const handleResetFilters = () => {
   statusFilter.value = "all"
 }
 
+const handleRefresh = async () => {
+  if (props.onRefresh) {
+    await props.onRefresh()
+  }
+  tickets.value = [...ticketsSource.value]
+}
+
+const handleExport = () => {
+  props.onExport?.(filteredTickets.value)
+}
+
 const handleLeaveMessage = (ticketId: string) => {
   window.location.href = `/tickets/${ticketId}`
 }
@@ -88,135 +122,112 @@ watch(
 </script>
 
 <template>
-  <SidebarProvider class="ticket-shell">
-    <AppSidebar :role="props.role" :active-path="props.activePath" />
-    <SidebarInset class="ticket-inset">
-      <div class="ticket-grid">
-        <section class="ticket-main">
-          <header class="surface-card ticket-header">
-            <div>
-              <p class="ticket-title">工单中心</p>
-              <p class="ticket-subtitle">查看、筛选工单并快速回复用户问题。</p>
-            </div>
-            <div class="ticket-header__actions">
-              <button type="button" class="ghost-btn">刷新</button>
-              <button type="button" class="primary-btn">导出记录</button>
-            </div>
-          </header>
-
-          <section class="surface-card filter-bar">
-            <div class="filter-search">
-              <input
-                v-model="keyword"
-                type="search"
-                placeholder="搜索问题描述、工单编号或提单人"
-                class="filter-search__input"
-              />
-            </div>
-            <div class="filter-actions">
-              <select v-model="statusFilter" class="filter-select">
-                <option v-for="option in statusOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
-              <button type="button" class="ghost-btn" @click="handleResetFilters">重置</button>
-            </div>
-          </section>
-
-          <section class="surface-card ticket-table">
-            <header class="table-head">
-              <span>问题描述</span>
-              <span>工单编号</span>
-              <span>问题类型</span>
-              <span>服务类型</span>
-              <span>提单人</span>
-              <span>状态</span>
-              <span>创建时间</span>
-              <span class="text-right">操作</span>
-            </header>
-            <div v-if="paginatedTickets.length" class="table-body">
-              <article
-                v-for="ticket in paginatedTickets"
-                :key="ticket.id"
-                class="table-row"
-                role="button"
-                tabindex="0"
-                @click="handleLeaveMessage(ticket.id)"
-              >
-                <div class="issue-col">
-                  <p class="issue-desc">{{ ticket.description }}</p>
-                </div>
-                <span class="muted">{{ ticket.ticketNo }}</span>
-                <span>{{ ticket.issueType }}</span>
-                <span>{{ ticket.serviceType }}</span>
-                <span>{{ ticket.requester }}</span>
-                <span>
-                  <span :class="ticketStatusClass(ticket.status)">{{ ticketStatusLabel(ticket.status) }}</span>
-                </span>
-                <span>{{ ticket.createdAt }}</span>
-                <span class="text-right">
-                  <button type="button" class="link-button" @click.stop="handleLeaveMessage(ticket.id)">查看对话</button>
-                </span>
-              </article>
-            </div>
-            <div v-else class="table-empty">
-              <p>没有匹配的工单，尝试调整搜索条件。</p>
-            </div>
-            <footer class="table-footer">
-              <p>共 {{ filteredTickets.length }} 条工单，展示 {{ pageSize }} 条/页</p>
-              <Pagination
-                v-model:page="page"
-                class="ticket-pagination"
-                :items-per-page="pageSize"
-                :total="filteredTickets.length"
-                :sibling-count="1"
-              >
-                <PaginationContent v-slot="{ items }">
-                  <PaginationPrevious aria-label="上一页" class="pagination-button">
-                    <span>上一页</span>
-                  </PaginationPrevious>
-                  <template v-for="(item, index) in items" :key="`${item.type}-${item.type === 'page' ? item.value : index}`">
-                    <PaginationItem
-                      v-if="item.type === 'page'"
-                      :value="item.value"
-                      :is-active="item.value === page"
-                      class="pagination-number"
-                    >
-                      {{ item.value }}
-                    </PaginationItem>
-                    <PaginationEllipsis v-else-if="item.type === 'ellipsis'" :index="index" />
-                  </template>
-                  <PaginationNext aria-label="下一页" class="pagination-button">
-                    <span>下一页</span>
-                  </PaginationNext>
-                </PaginationContent>
-              </Pagination>
-            </footer>
-          </section>
-        </section>
+  <TicketWorkspace :role="props.role" :active-path="props.activePath">
+    <header class="surface-card ticket-header">
+      <div>
+        <p class="ticket-title">工单中心</p>
+        <p class="ticket-subtitle">查看、筛选工单并快速回复用户问题。</p>
       </div>
-    </SidebarInset>
-  </SidebarProvider>
+      <div class="ticket-header__actions">
+        <button type="button" class="ghost-btn" @click="handleRefresh">刷新</button>
+        <button type="button" class="primary-btn" @click="handleExport">导出记录</button>
+      </div>
+    </header>
+
+    <section class="surface-card filter-bar">
+      <div class="filter-search">
+        <input
+          v-model="keyword"
+          type="search"
+          placeholder="搜索问题描述、工单编号或提单人"
+          class="filter-search__input"
+        />
+      </div>
+      <div class="filter-actions">
+        <select v-model="statusFilter" class="filter-select">
+          <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+        <button type="button" class="ghost-btn" @click="handleResetFilters">重置</button>
+      </div>
+    </section>
+
+    <section class="surface-card ticket-table">
+      <header class="table-head">
+        <span>问题描述</span>
+        <span>工单编号</span>
+        <span>问题类型</span>
+        <span>服务类型</span>
+        <span>提单人</span>
+        <span>状态</span>
+        <span>创建时间</span>
+        <span class="text-right">操作</span>
+      </header>
+      <div v-if="paginatedTickets.length" class="table-body">
+        <article
+          v-for="ticket in paginatedTickets"
+          :key="ticket.id"
+          class="table-row"
+          role="button"
+          tabindex="0"
+          @click="handleLeaveMessage(ticket.id)"
+        >
+          <div class="issue-col">
+            <p class="issue-desc">{{ ticket.description }}</p>
+          </div>
+          <span class="muted">{{ ticket.ticketNo }}</span>
+          <span>{{ ticket.issueType }}</span>
+          <span>{{ ticket.serviceType }}</span>
+          <span>{{ ticket.requester }}</span>
+          <span>
+            <span :class="ticketStatusClass(ticket.status)">{{ ticketStatusLabel(ticket.status) }}</span>
+          </span>
+          <span>{{ ticket.createdAt }}</span>
+          <span class="text-right">
+            <button type="button" class="link-button" @click.stop="handleLeaveMessage(ticket.id)">查看对话</button>
+          </span>
+        </article>
+      </div>
+      <div v-else class="table-empty">
+        <p>没有匹配的工单，尝试调整搜索条件。</p>
+      </div>
+      <footer class="table-footer">
+        <p>共 {{ filteredTickets.length }} 条工单，展示 {{ pageSize }} 条/页</p>
+        <Pagination
+          v-model:page="page"
+          class="ticket-pagination"
+          :items-per-page="pageSize"
+          :total="filteredTickets.length"
+          :sibling-count="1"
+        >
+          <PaginationContent v-slot="{ items }">
+            <PaginationPrevious aria-label="上一页" class="pagination-button">
+              <span>上一页</span>
+            </PaginationPrevious>
+            <template v-for="(item, index) in items" :key="`${item.type}-${item.type === 'page' ? item.value : index}`">
+              <PaginationItem
+                v-if="item.type === 'page'"
+                :value="item.value"
+                :is-active="item.value === page"
+                class="pagination-number"
+              >
+                {{ item.value }}
+              </PaginationItem>
+              <PaginationEllipsis v-else-if="item.type === 'ellipsis'" :index="index" />
+            </template>
+            <PaginationNext aria-label="下一页" class="pagination-button">
+              <span>下一页</span>
+            </PaginationNext>
+          </PaginationContent>
+        </Pagination>
+      </footer>
+    </section>
+  </TicketWorkspace>
 </template>
 
 <style scoped>
 @reference "../../styles/global.css";
-.ticket-shell {
-  @apply bg-muted/30 text-sm text-foreground;
-}
-
-.ticket-inset {
-  @apply min-h-screen;
-}
-
-.ticket-grid {
-  @apply flex min-h-screen justify-center px-4 py-6 lg:px-12;
-}
-
-.ticket-main {
-  @apply flex w-full max-w-5xl flex-col gap-5;
-}
-
 .surface-card {
   @apply rounded-[32px] bg-white p-6 shadow-sm ring-1 ring-black/5;
 }

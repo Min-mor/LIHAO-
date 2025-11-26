@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue"
 import type { UserRole } from "@/components/dashboard/types"
-import AppSidebar from "@/components/dashboard/AppSidebar.vue"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import TicketWorkspace from "@/components/tickets/TicketWorkspace.vue"
 import type { TicketRecord } from "@/mock/data/tickets"
 import { ticketCenterMock } from "@/mock/data/tickets"
 import type { TicketMessage } from "@/mock/data/ticketConversations"
@@ -99,102 +98,74 @@ const statusLabel = computed(() => {
 </script>
 
 <template>
-  <SidebarProvider class="ticket-conversation-shell">
-    <AppSidebar :role="props.role" :active-path="props.activePath" />
-    <SidebarInset class="ticket-conversation-inset">
-      <div class="ticket-conversation-grid">
-        <section class="ticket-conversation-main">
-          <header class="surface-card conversation-header">
-            <div>
-              <button class="link-button" type="button" @click="handleBackToList">返回工单中心</button>
-              <p class="conversation-title">工单对话</p>
-              <p class="conversation-subtitle">与客户保持顺畅沟通，追踪处理进度。</p>
-            </div>
-            <div class="conversation-meta" v-if="ticketDetail">
-              <p class="conversation-ticket">{{ ticketDetail.ticketNo }}</p>
-              <span :class="statusBadgeClass">{{ statusLabel }}</span>
-            </div>
-          </header>
-
-          <section class="surface-card conversation-board">
-            <div class="ticket-summary" v-if="ticketDetail">
-              <div>
-                <p class="summary-title">{{ ticketDetail.description }}</p>
-                <div class="summary-info">
-                  <span>{{ ticketDetail.issueType }}</span>
-                  <span>{{ ticketDetail.serviceType }}</span>
-                </div>
-              </div>
-              <div class="summary-meta">
-                <p>提单人：{{ ticketDetail.requester }}</p>
-                <p>创建时间：{{ ticketDetail.createdAt }}</p>
-              </div>
-            </div>
-            <div v-else class="ticket-summary ticket-summary--empty">
-              <p class="summary-title">未找到对应工单</p>
-              <p class="text-sm text-muted-foreground">请返回工单中心重新选择。</p>
-            </div>
-
-            <div ref="chatContainer" class="chat-panel">
-              <template v-if="currentMessages.length">
-                <div
-                  v-for="message in currentMessages"
-                  :key="message.id"
-                  :class="['chat-message', message.authorType === 'agent' ? 'chat-message--agent' : 'chat-message--requester']"
-                >
-                  <div class="chat-bubble">
-                    <p class="chat-author">{{ message.authorName }}</p>
-                    <p class="chat-content">{{ message.content }}</p>
-                    <p class="chat-timestamp">{{ message.timestamp }}</p>
-                  </div>
-                </div>
-              </template>
-              <div v-else class="chat-empty">
-                <p>暂无对话记录，欢迎发送第一条消息。</p>
-              </div>
-            </div>
-
-            <div class="chat-input-area">
-              <textarea
-                v-model="newMessage"
-                class="chat-textarea"
-                rows="3"
-                placeholder="输入需要回复的内容..."
-              ></textarea>
-              <button
-                type="button"
-                class="primary-btn chat-send"
-                :disabled="!newMessage.trim() || sending"
-                @click="handleSendMessage"
-              >
-                发送
-              </button>
-            </div>
-          </section>
-        </section>
+  <TicketWorkspace :role="props.role" :active-path="props.activePath">
+    <header class="surface-card conversation-header">
+      <div>
+        <button class="link-button" type="button" @click="handleBackToList">返回工单中心</button>
+        <p class="conversation-title">工单对话</p>
+        <p class="conversation-subtitle">与客户保持顺畅沟通，追踪处理进度。</p>
       </div>
-    </SidebarInset>
-  </SidebarProvider>
+      <div class="conversation-meta" v-if="ticketDetail">
+        <p class="conversation-ticket">{{ ticketDetail.ticketNo }}</p>
+        <span :class="statusBadgeClass">{{ statusLabel }}</span>
+      </div>
+    </header>
+
+    <section class="surface-card conversation-board">
+      <div class="ticket-summary" v-if="ticketDetail">
+        <div>
+          <p class="summary-title">{{ ticketDetail.description }}</p>
+          <div class="summary-info">
+            <span>{{ ticketDetail.issueType }}</span>
+            <span>{{ ticketDetail.serviceType }}</span>
+          </div>
+        </div>
+        <div class="summary-meta">
+          <p>提单人：{{ ticketDetail.requester }}</p>
+          <p>创建时间：{{ ticketDetail.createdAt }}</p>
+        </div>
+      </div>
+      <div v-else class="ticket-summary ticket-summary--empty">
+        <p class="summary-title">未找到对应工单</p>
+        <p class="text-sm text-muted-foreground">请返回工单中心重新选择。</p>
+      </div>
+
+      <div ref="chatContainer" class="chat-panel">
+        <template v-if="currentMessages.length">
+          <div
+            v-for="message in currentMessages"
+            :key="message.id"
+            :class="['chat-message', message.authorType === 'agent' ? 'chat-message--agent' : 'chat-message--requester']"
+          >
+            <div class="chat-bubble">
+              <p class="chat-author">{{ message.authorName }}</p>
+              <p class="chat-content">{{ message.content }}</p>
+              <p class="chat-timestamp">{{ message.timestamp }}</p>
+            </div>
+          </div>
+        </template>
+        <div v-else class="chat-empty">
+          <p>暂无对话记录，欢迎发送第一条消息。</p>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <textarea v-model="newMessage" class="chat-textarea" rows="3" placeholder="输入需要回复的内容..."></textarea>
+        <button
+          type="button"
+          class="primary-btn chat-send"
+          :disabled="!newMessage.trim() || sending"
+          @click="handleSendMessage"
+        >
+          发送
+        </button>
+      </div>
+    </section>
+  </TicketWorkspace>
 </template>
 
 <style scoped>
 @reference "../../styles/global.css";
-.ticket-conversation-shell {
-  @apply bg-muted/30 text-sm text-foreground;
-}
-
-.ticket-conversation-inset {
-  @apply min-h-screen;
-}
-
-.ticket-conversation-grid {
-  @apply flex min-h-screen justify-center px-4 py-6 lg:px-12;
-}
-
-.ticket-conversation-main {
-  @apply flex w-full max-w-5xl flex-col gap-5;
-}
-
 .surface-card {
   @apply rounded-[32px] bg-white p-6 shadow-sm ring-1 ring-black/5;
 }
