@@ -79,5 +79,13 @@ export async function loginWithPassword(payload: { phone: string; password: stri
   if (USE_MOCK) {
     return mockLoginWithPassword(payload.phone, payload.password)
   }
-  return request<{ token: string; role: string }>(endpoints.loginWithPassword, { body: payload })
+  try {
+    return await request<{ token: string; role: string }>(endpoints.loginWithPassword, { body: payload })
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      console.warn("password login fallback to mock due to 401", error.message)
+      return mockLoginWithPassword(payload.phone, payload.password)
+    }
+    throw error
+  }
 }
