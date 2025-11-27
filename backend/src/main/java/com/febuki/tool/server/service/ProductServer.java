@@ -6,7 +6,7 @@ import com.febuki.tool.server.entity.Product;
 
 public interface ProductServer {
     // 分页获取商品
-    IPage<Product> listProducts(int page, int limit, String keyword);
+    IPage<ProductDTO> listProducts(int page, int limit, String keyword);
     // 根据ID获取商品
     Product getProductById(Long id);
     // 添加商品

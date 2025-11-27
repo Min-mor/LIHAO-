@@ -5,6 +5,12 @@ import type { ReminderItem, ReminderToneMeta, UserRole } from "./types"
 import { dashboardMock } from "@/mock/data/dashboard"
 import AppSidebar from "./AppSidebar.vue"
 import ProfilePanel from "./ProfilePanel.vue"
+import DashboardChartCard from "./DashboardChartCard.vue"
+import RevenueTrendChart from "@/components/analytics/RevenueTrendChart.vue"
+import OrderTrendChart from "@/components/analytics/OrderTrendChart.vue"
+import { ChartTooltipContent, componentToString, type ChartConfig } from "@/components/ui/chart"
+import type { ReportRange } from "@/mock/data/sales"
+import { chartDatasets } from "@/mock/data/sales"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 const props = withDefaults(defineProps<{ role?: UserRole }>(), {
@@ -16,27 +22,7 @@ const emit = defineEmits<{ (e: "logout"): void }>()
 const activePath = ref("/")
 
 const dataset = computed(() => dashboardMock[props.role])
-
-const charts = computed(() =>
-  dataset.value.chartConfigs.map((chart) => {
-    const max = Math.max(...chart.data.map((item) => item.value)) || 1
-    const polyline =
-      chart.type === "line"
-        ? chart.data
-            .map((item, index) => {
-              const x = (index / (chart.data.length - 1 || 1)) * 100
-              const y = 100 - (item.value / max) * 100
-              return `${x},${y}`
-            })
-            .join(" ")
-        : undefined
-    return {
-      ...chart,
-      max,
-      polyline,
-    }
-  }),
-)
+const isAdmin = computed(() => props.role === "admin")
 
 const reminderToneMap: Record<ReminderItem["tone"], ReminderToneMeta> = {
   success: {
@@ -60,6 +46,117 @@ const reminderToneMap: Record<ReminderItem["tone"], ReminderToneMeta> = {
     iconText: "text-destructive",
   },
 }
+
+const trendRanges: { label: string; value: ReportRange }[] = [
+  { label: "单日", value: "day" },
+  { label: "单周", value: "week" },
+  { label: "单月", value: "month" },
+  { label: "单季", value: "quarter" },
+  { label: "全年", value: "year" },
+]
+
+const adminRevenueRange = ref<ReportRange>("week")
+const adminOrderRange = ref<ReportRange>("week")
+const adminUserRange = ref<ReportRange>("week")
+
+const adminRevenueTrend = computed(() => chartDatasets.revenue[adminRevenueRange.value])
+const adminOrderTrend = computed(() => chartDatasets.orders[adminOrderRange.value])
+const adminUserTrend = computed(() => chartDatasets.users[adminUserRange.value])
+
+const adminRevenueSeries = computed(() =>
+  adminRevenueTrend.value.data.map((item, index) => ({ ...item, index, revenue: item.value })),
+)
+
+const adminOrderSeries = computed(() =>
+  adminOrderTrend.value.data.map((item, index) => ({ ...item, index, orders: item.value })),
+)
+
+const adminUserSeries = computed(() =>
+  adminUserTrend.value.data.map((item, index) => ({ ...item, index, orders: item.value })),
+)
+
+function formatCurrency(value: number) {
+  return `￥${value.toLocaleString()}`
+}
+
+function formatNumber(value: number) {
+  return value.toLocaleString()
+}
+
+const adminRevenueSummary = computed(() =>
+  formatCurrency(adminRevenueSeries.value.reduce((sum, item) => sum + item.revenue, 0)),
+)
+
+const adminOrderSummary = computed(() =>
+  formatNumber(adminOrderSeries.value.reduce((sum, item) => sum + item.orders, 0)),
+)
+
+const adminUserSummary = computed(() =>
+  formatNumber(adminUserSeries.value.reduce((sum, item) => sum + item.orders, 0)),
+)
+
+const trendChartMargin = { top: 12, right: 16, bottom: 36, left: 56 }
+
+const adminRevenueChartConfig = {
+  revenue: {
+    label: "全站流水",
+    color: "#0ea5e9",
+  },
+} as const satisfies ChartConfig
+
+const adminOrderChartConfig = {
+  orders: {
+    label: "预订量",
+    color: "#2563eb",
+  },
+} as const satisfies ChartConfig
+
+const adminUserChartConfig = {
+  users: {
+    label: "新增用户",
+    color: "#9333ea",
+  },
+} as const satisfies ChartConfig
+
+const createTickFormatter = (seriesGetter: () => { label: string }[]) => (value: number) => {
+  const series = seriesGetter()
+  if (!Number.isFinite(value))
+    return ""
+  const index = Math.max(0, Math.min(series.length - 1, Math.round(value)))
+  return series[index]?.label ?? ""
+}
+
+const revenueTickFormatter = createTickFormatter(() => adminRevenueTrend.value.data)
+const orderTickFormatter = createTickFormatter(() => adminOrderTrend.value.data)
+const userTickFormatter = createTickFormatter(() => adminUserTrend.value.data)
+
+function formatAxisCurrency(value: number | Date) {
+  if (typeof value !== "number")
+    return String(value)
+  if (value >= 1_000_000)
+    return `￥${(value / 1_000_000).toFixed(1)}M`
+  if (value >= 10000)
+    return `￥${(value / 10000).toFixed(1)}万`
+  return `￥${Math.round(value).toLocaleString()}`
+}
+
+function formatAxisNumber(value: number | Date) {
+  if (typeof value !== "number")
+    return String(value)
+  return value.toLocaleString()
+}
+
+const adminRevenueTooltip = componentToString(adminRevenueChartConfig, ChartTooltipContent, {
+  labelKey: "label",
+})
+
+const adminOrderTooltip = componentToString(adminOrderChartConfig, ChartTooltipContent, {
+  labelKey: "label",
+})
+
+const adminUserTooltip = componentToString(adminUserChartConfig, ChartTooltipContent, {
+  labelKey: "label",
+})
 </script>
 
 <template>
@@ -122,62 +219,53 @@ const reminderToneMap: Record<ReminderItem["tone"], ReminderToneMeta> = {
             </article>
           </section>
 
-          <section class="chart-grid">
-            <article
-              v-for="chart in charts"
-              :key="chart.id"
-              class="surface-card chart-card"
-            >
-              <header class="chart-card__header">
-                <div>
-                  <p class="panel-title">{{ chart.title }}</p>
-                  <p class="panel-caption" v-if="chart.subtitle">{{ chart.subtitle }}</p>
-                </div>
-                <span class="panel-caption">近 7 天</span>
-              </header>
-              <div v-if="chart.type === 'bar'" class="chart-bar-group">
-                <div
-                  v-for="item in chart.data"
-                  :key="item.label"
-                  class="chart-bar-item"
-                >
-                  <div class="chart-bar-shell">
-                    <div
-                      class="chart-bar"
-                      :style="{ height: `${Math.round((item.value / chart.max) * 100)}%` }"
-                    ></div>
-                  </div>
-                  <p class="panel-caption">{{ item.label }}</p>
-                  <p class="chart-bar-value">{{ item.value }}</p>
-                </div>
-              </div>
-              <div v-else class="chart-line-group">
-                <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="chart-line-graph">
-                  <defs>
-                    <linearGradient id="line-fill" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stop-color="rgb(32 185 112 / 0.35)" />
-                      <stop offset="100%" stop-color="rgb(32 185 112 / 0)" />
-                    </linearGradient>
-                  </defs>
-                  <polygon
-                    :points="`${chart.polyline} 100,100 0,100`"
-                    fill="url(#line-fill)"
-                    stroke="none"
-                  />
-                  <polyline
-                    :points="chart.polyline"
-                    fill="none"
-                    class="chart-line"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-                <div class="chart-line-x">
-                  <span v-for="item in chart.data" :key="item.label">{{ item.label }}</span>
-                </div>
-              </div>
-            </article>
+          <section v-if="isAdmin" class="surface-card admin-chart-panel">
+            <div class="admin-chart-stack">
+              <RevenueTrendChart
+                title="全站流水走势"
+                caption="展示不同粒度的交易流水，单位：元"
+                :trend-ranges="trendRanges"
+                v-model="adminRevenueRange"
+                :chart-config="adminRevenueChartConfig"
+                :series="adminRevenueSeries"
+                :chart-margin="trendChartMargin"
+                :tick-formatter="revenueTickFormatter"
+                :axis-formatter="formatAxisCurrency"
+                :tooltip-template="adminRevenueTooltip"
+                summary-label="总流水"
+                :summary-value="adminRevenueSummary"
+              />
+
+              <OrderTrendChart
+                title="平台预订量"
+                caption="订单数量随时间的变化，单位：单"
+                :trend-ranges="trendRanges"
+                v-model="adminOrderRange"
+                :chart-config="adminOrderChartConfig"
+                :series="adminOrderSeries"
+                :chart-margin="trendChartMargin"
+                :tick-formatter="orderTickFormatter"
+                :axis-formatter="formatAxisNumber"
+                :tooltip-template="adminOrderTooltip"
+                summary-label="总预订量"
+                :summary-value="adminOrderSummary"
+              />
+
+              <OrderTrendChart
+                title="新增用户"
+                caption="平台新增用户趋势，单位：人"
+                :trend-ranges="trendRanges"
+                v-model="adminUserRange"
+                :chart-config="adminUserChartConfig"
+                :series="adminUserSeries"
+                :chart-margin="trendChartMargin"
+                :tick-formatter="userTickFormatter"
+                :axis-formatter="formatAxisNumber"
+                :tooltip-template="adminUserTooltip"
+                summary-label="新增用户数"
+                :summary-value="adminUserSummary"
+              />
+            </div>
           </section>
 
           <section class="panel-grid">
@@ -305,6 +393,14 @@ const reminderToneMap: Record<ReminderItem["tone"], ReminderToneMeta> = {
   @apply grid gap-4 md:grid-cols-2 xl:grid-cols-4;
 }
 
+.admin-chart-panel {
+  @apply p-6;
+}
+
+.admin-chart-stack {
+  @apply flex flex-col gap-6;
+}
+
 .stat-card__header {
   @apply flex items-center justify-between gap-3;
 }
@@ -329,56 +425,12 @@ const reminderToneMap: Record<ReminderItem["tone"], ReminderToneMeta> = {
   @apply size-6;
 }
 
-.chart-grid {
-  @apply grid gap-6 xl:grid-cols-1;
-}
-
-.chart-card__header {
-  @apply mb-4 flex items-center justify-between;
-}
-
 .panel-title {
   @apply text-lg font-semibold text-foreground;
 }
 
 .panel-caption {
   @apply text-xs text-muted-foreground;
-}
-
-.chart-bar-group {
-  @apply flex items-end gap-6;
-}
-
-.chart-bar-item {
-  @apply flex flex-1 flex-col items-center gap-3;
-}
-
-.chart-bar-shell {
-  @apply flex h-48 w-full items-end rounded-3xl bg-muted/60 p-3;
-}
-
-.chart-bar {
-  @apply w-full rounded-3xl bg-gradient-to-t from-primary/40 to-primary;
-}
-
-.chart-bar-value {
-  @apply text-sm font-semibold text-foreground;
-}
-
-.chart-line-group {
-  @apply flex flex-col gap-4;
-}
-
-.chart-line-graph {
-  @apply h-48 w-full;
-}
-
-.chart-line {
-  @apply stroke-primary;
-}
-
-.chart-line-x {
-  @apply flex justify-between text-xs text-muted-foreground;
 }
 
 .panel-grid {

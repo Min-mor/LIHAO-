@@ -1,5 +1,8 @@
 package com.febuki.tool.server.dto.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum UserRole {
     ADMIN("admin"),
     MERCHANT("merchant"),
@@ -9,10 +12,6 @@ public enum UserRole {
 
     UserRole(String roleName) {
         this.roleName = roleName;
-    }
-
-    public String getRoleName() {
-        return roleName;
     }
 
     /**

@@ -6,13 +6,20 @@ import com.febuki.tool.server.entity.Order;
 
 public interface OrderServer {
     // 添加订单
-    void createOrder(OrderDTO orderDTO);
-    // 分页获取订单 (可筛选用户ID)
-    IPage<Order> listOrders(int page, int limit, Long userId);
+    Order createOrder(OrderDTO orderDTO);
+
+    // 分页获取订单
+    IPage<OrderDTO> listOrders(int page, int limit);
+
     // 获取订单详情
     Order getOrderById(Long id);
-    // 更新订单
-//    void updateOrder(OrderDTO orderDTO);
-    // 删除订单
-    void deleteOrder(Long id);
+
+    // 支付订单
+    void payOrder(Long id);
+
+    // 确认订单 (状态流转: 未完成 -> 待评价)
+    void confirmOrder(Long id);
+
+    // 完成订单 (状态流转: 待评价 -> 已完成)
+    void completeOrder(Long id);
 }

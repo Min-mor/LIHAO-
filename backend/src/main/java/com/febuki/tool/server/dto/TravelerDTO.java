@@ -22,4 +22,17 @@ public class TravelerDTO {
     private String idCardNumber;
     @Schema(description = "游客类型", example = "1")
     private Short travelerType;
+
+    public TravelerDTO() {
+    }
+
+    public TravelerDTO(Long id, Long userId, String fullName, Long phone, short idCardType, String idCardNumber, Short travelerType) {
+        this.id = id;
+        this.userId = userId;
+        this.fullName = fullName;
+        this.phone = phone;
+        this.idCardType = idCardType;
+        this.idCardNumber = idCardNumber;
+        this.travelerType = travelerType;
+    }
 }

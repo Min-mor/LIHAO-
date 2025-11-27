@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, onMounted, ref } from "vue"
 import type { AcceptableValue } from "reka-ui"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
@@ -36,6 +36,8 @@ const props = withDefaults(defineProps<{
   tickFormatter: (value: number) => string
   axisFormatter: (value: number | Date) => string
   tooltipTemplate?: TooltipTemplate
+  summaryLabel?: string
+  summaryValue?: string
 }>(), {
   height: 320,
 })
@@ -53,18 +55,29 @@ const selectedRange = computed({
 
 const indexAccessor = (datum: RevenuePoint) => datum.index
 const valueAccessor = (datum: RevenuePoint) => datum.revenue
-const areaColor = computed(() => Object.values(props.chartConfig)[0]?.color)
+const areaColor = computed(() => Object.values(props.chartConfig)[0]?.color || "#16a34a")
+const isMounted = ref(false)
+onMounted(() => {
+  isMounted.value = true
+})
+const showTooltip = computed(() => isMounted.value && !!props.tooltipTemplate)
 </script>
 
 <template>
-  <article class="chart-card">
-    <div class="chart-header">
-      <div>
-        <p class="chart-title">{{ title }}</p>
-        <p class="chart-caption">{{ caption }}</p>
+  <article class="rounded-3xl border border-border/40 p-5 space-y-4">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div class="space-y-2">
+        <div class="space-y-1">
+          <p class="text-base font-semibold">{{ title }}</p>
+          <p class="text-xs text-muted-foreground">{{ caption }}</p>
+        </div>
+        <div v-if="summaryValue" class="flex flex-col">
+          <p class="text-2xl font-semibold leading-tight">{{ summaryValue }}</p>
+          <p v-if="summaryLabel" class="text-xs text-muted-foreground">{{ summaryLabel }}</p>
+        </div>
       </div>
       <Select v-model="selectedRange">
-        <SelectTrigger class="chart-select">
+        <SelectTrigger class="w-[120px] rounded-2xl border border-border bg-white px-3 py-1.5 text-xs font-semibold">
           <SelectValue placeholder="选择粒度" />
         </SelectTrigger>
         <SelectContent>
@@ -74,7 +87,11 @@ const areaColor = computed(() => Object.values(props.chartConfig)[0]?.color)
         </SelectContent>
       </Select>
     </div>
-    <ChartContainer :config="chartConfig" class="chart-container">
+    <ChartContainer
+      :config="chartConfig"
+      class="w-full !aspect-auto"
+      :style="{ minHeight: `${props.height}px` }"
+    >
       <VisXYContainer :data="series" :margin="chartMargin" :height="height">
         <VisArea
           :x="indexAccessor"
@@ -84,8 +101,8 @@ const areaColor = computed(() => Object.values(props.chartConfig)[0]?.color)
         />
         <VisAxis type="x" position="bottom" :tick-format="tickFormatter" />
         <VisAxis type="y" position="left" :tick-format="axisFormatter" />
-        <ChartCrosshair v-if="tooltipTemplate" :template="tooltipTemplate" show-circle />
-        <ChartTooltip v-if="tooltipTemplate" :template="tooltipTemplate" />
+        <ChartCrosshair v-if="showTooltip" :template="tooltipTemplate" show-circle />
+        <ChartTooltip v-if="showTooltip" :template="tooltipTemplate" />
       </VisXYContainer>
       <ChartLegendContent />
     </ChartContainer>

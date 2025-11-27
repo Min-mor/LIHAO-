@@ -20,6 +20,36 @@ public class MerchantController {
         this.merchantServer = merchantServer;
     }
 
+    private String convertErrorMessage(String errorCode) {
+        if (errorCode == null) return "未知错误";
+        switch (errorCode) {
+            case "USER_ID_NULL":
+                return "用户ID不能为空";
+            case "USER_NOT_FOUND":
+                return "入驻失败：用户ID不存在";
+            case "USER_ROLE_NOT_MERCHANT":
+                return "入驻失败：该用户角色不是商家，无法入驻";
+            case "MERCHANT_ALREADY_EXISTS":
+                return "入驻失败：该用户已经是商户，请勿重复入驻";
+            case "COMPANY_NAME_NULL":
+                return "商户名称不能为空";
+            case "COMPANY_NAME_DUPLICATE":
+                return "操作失败：商户名称已存在，请使用其他名称";
+            case "MERCHANT_ID_NULL":
+                return "商户ID不能为空";
+            case "MERCHANT_NOT_FOUND":
+                return "操作失败：商户信息不存在";
+            case "APPROVER_NOT_FOUND":
+                return "操作失败：指定的审核人不存在";
+            case "USER_ROLE_NOT_ADMIN":
+                return "操作失败：审核人必须拥有管理员权限";
+            case "MERCHANT_HAS_PRODUCTS":
+                return "删除失败：该商户名下还有商品，请先下架或删除所有商品";
+            default:
+                return "操作失败: " + errorCode;
+        }
+    }
+
     @PostMapping("/add")
     @Operation(summary = "添加商户", description = "添加商户")
     public ResponseEntity<?> addMerchant(@RequestBody MerchantDTO merchantDTO) {
@@ -28,7 +58,8 @@ public class MerchantController {
             return ResponseEntity.status(HttpStatus.OK).body(
                     MapUtils.of(
                             MapUtils.Pair.of("code", HttpStatus.OK.value()),
-                            MapUtils.Pair.of("message", "添加成功")
+                            MapUtils.Pair.of("message", "添加成功"),
+                            MapUtils.Pair.of("data", merchantDTO)
                     )
             );
         } catch (RuntimeException e) {
@@ -117,30 +148,6 @@ public class MerchantController {
                             MapUtils.Pair.of("message", convertErrorMessage(e.getMessage()))
                     )
             );
-        }
-    }
-
-    private String convertErrorMessage(String errorCode) {
-        if (errorCode == null) return "未知错误";
-        switch (errorCode) {
-            case "USER_ID_NULL":
-                return "用户ID不能为空";
-            case "USER_NOT_FOUND":
-                return "入驻失败：用户ID不存在";
-            case "MERCHANT_ALREADY_EXISTS":
-                return "入驻失败：该用户已经是商户，请勿重复入驻";
-            case "COMPANY_NAME_NULL":
-                return "商户名称不能为空";
-            case "COMPANY_NAME_DUPLICATE":
-                return "操作失败：商户名称已存在，请使用其他名称";
-            case "MERCHANT_ID_NULL":
-                return "商户ID不能为空";
-            case "MERCHANT_NOT_FOUND":
-                return "操作失败：商户信息不存在";
-            case "MERCHANT_HAS_PRODUCTS":
-                return "删除失败：该商户名下还有商品，请先下架或删除所有商品";
-            default:
-                return "操作失败: " + errorCode;
         }
     }
 }

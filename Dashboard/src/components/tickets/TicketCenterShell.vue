@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue"
+import { computed, ref, watch } from "vue"
 import type { UserRole } from "@/components/dashboard/types"
 import {
   Pagination,
@@ -14,7 +14,7 @@ import { ticketCenterMock } from "@/mock/data/tickets"
 import TicketWorkspace from "@/components/tickets/TicketWorkspace.vue"
 import { readAuthSession } from "@/lib/auth"
 
-const DEFAULT_ROLE: UserRole = "admin"
+const DEFAULT_ROLE: UserRole = "merchant"
 
 const props = withDefaults(
   defineProps<{
@@ -31,18 +31,19 @@ const props = withDefaults(
   },
 )
 
-const sessionRole = ref<UserRole>(DEFAULT_ROLE)
+function resolveInitialRole() {
+  if (typeof window === "undefined")
+    return DEFAULT_ROLE
+  return readAuthSession()?.role ?? DEFAULT_ROLE
+}
 
-onMounted(() => {
-  const session = readAuthSession()
-  if (session?.role) {
-    sessionRole.value = session.role
-  }
-})
+const sessionRole = ref<UserRole>(resolveInitialRole())
 
 const resolvedRole = computed<UserRole>(() => props.role ?? sessionRole.value)
 
-const ticketsSource = computed(() => props.ticketsData ?? ticketCenterMock.tickets)
+const dataset = computed(() => ticketCenterMock[resolvedRole.value] ?? ticketCenterMock.merchant)
+
+const ticketsSource = computed(() => props.ticketsData ?? dataset.value.tickets)
 const tickets = ref<TicketRecord[]>([...ticketsSource.value])
 
 watch(ticketsSource, (next) => {

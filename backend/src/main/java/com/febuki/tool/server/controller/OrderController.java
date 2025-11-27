@@ -15,6 +15,11 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
     private final OrderServer orderServer;
+
+    public OrderController(OrderServer orderServer) {
+        this.orderServer = orderServer;
+    }
+
     private String convertErrorMessage(String errorCode) {
         if (errorCode == null) return "未知错误";
         switch (errorCode) {
@@ -36,13 +41,15 @@ public class OrderController {
                 return "操作失败：订单不存在";
             case "OrderSN_EXIST":
                 return "下单失败：订单码已存在";
+            case "ORDER_ALREADY_PAID":
+                return "操作失败：订单已支付，请勿重复支付";
+            case "ORDER_NOT_PAID":
+                return "操作失败：订单未支付";
+            case "ORDER_STATUS_ERROR":
+                return "操作失败：订单状态不符合操作要求";
             default:
                 return "操作失败: " + errorCode;
         }
-    }
-
-    public OrderController(OrderServer orderServer) {
-        this.orderServer = orderServer;
     }
 
     @PostMapping("/add")
@@ -53,7 +60,8 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.OK).body(
                     MapUtils.of(
                             MapUtils.Pair.of("code", HttpStatus.OK.value()),
-                            MapUtils.Pair.of("message", "下单成功")
+                            MapUtils.Pair.of("message", "下单成功"),
+                            MapUtils.Pair.of("data", orderDTO)
                     )
             );
         } catch (RuntimeException e) {
@@ -71,14 +79,13 @@ public class OrderController {
     @Operation(summary = "订单列表", description = "分页获取订单列表")
     public ResponseEntity<?> list(
             @RequestParam(required = false, defaultValue = "1") int page,
-            @RequestParam(required = false, defaultValue = "10") int limit,
-            @RequestParam(required = false) Long userId
+            @RequestParam(required = false, defaultValue = "10") int limit
     ) {
         return ResponseEntity.status(HttpStatus.OK).body(
                 MapUtils.of(
                         MapUtils.Pair.of("code", HttpStatus.OK.value()),
                         MapUtils.Pair.of("message", "获取成功"),
-                        MapUtils.Pair.of("data", orderServer.listOrders(page, limit, userId))
+                        MapUtils.Pair.of("data", orderServer.listOrders(page, limit))
                 )
         );
     }
@@ -104,45 +111,67 @@ public class OrderController {
         );
     }
 
-//    @PutMapping("/update")
-//    @Operation(summary = "更新订单", description = "更新订单信息")
-//    public ResponseEntity<?> update(@RequestBody OrderDTO orderDTO) {
-//        try {
-//            orderServer.updateOrder(orderDTO);
-//            return ResponseEntity.status(HttpStatus.OK).body(
-//                    MapUtils.of(
-//                            MapUtils.Pair.of("code", HttpStatus.OK.value()),
-//                            MapUtils.Pair.of("message", "更新成功")
-//                    )
-//            );
-//        } catch (RuntimeException e) {
-//            String errorMsg = convertErrorMessage(e.getMessage());
-//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-//                    MapUtils.of(
-//                            MapUtils.Pair.of("code", HttpStatus.BAD_REQUEST.value()),
-//                            MapUtils.Pair.of("message", errorMsg)
-//                    )
-//            );
-//        }
-//    }
-
-    @DeleteMapping("/delete/{id}")
-    @Operation(summary = "删除订单", description = "删除订单")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
+    @PostMapping("/pay/{id}")
+    @Operation(summary = "支付订单", description = "模拟支付操作")
+    public ResponseEntity<?> payOrder(@PathVariable Long id) {
         try {
-            orderServer.deleteOrder(id);
+            orderServer.payOrder(id);
             return ResponseEntity.status(HttpStatus.OK).body(
                     MapUtils.of(
                             MapUtils.Pair.of("code", HttpStatus.OK.value()),
-                            MapUtils.Pair.of("message", "删除成功")
+                            MapUtils.Pair.of("message", "支付成功"),
+                            MapUtils.Pair.of("data", orderServer.getOrderById(id))
                     )
             );
         } catch (RuntimeException e) {
-            String errorMsg = convertErrorMessage(e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                     MapUtils.of(
                             MapUtils.Pair.of("code", HttpStatus.BAD_REQUEST.value()),
-                            MapUtils.Pair.of("message", errorMsg)
+                            MapUtils.Pair.of("message", convertErrorMessage(e.getMessage()))
+                    )
+            );
+        }
+    }
+
+    @PostMapping("/confirm/{id}")
+    @Operation(summary = "确认收货/消费", description = "将订单状态从'未完成'改为'待评价'")
+    public ResponseEntity<?> confirmOrder(@PathVariable Long id) {
+        try {
+            orderServer.confirmOrder(id);
+            return ResponseEntity.status(HttpStatus.OK).body(
+                    MapUtils.of(
+                            MapUtils.Pair.of("code", HttpStatus.OK.value()),
+                            MapUtils.Pair.of("message", "确认成功，订单待评价"),
+                            MapUtils.Pair.of("data", orderServer.getOrderById(id))
+                    )
+            );
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    MapUtils.of(
+                            MapUtils.Pair.of("code", HttpStatus.BAD_REQUEST.value()),
+                            MapUtils.Pair.of("message", convertErrorMessage(e.getMessage()))
+                    )
+            );
+        }
+    }
+
+    @PostMapping("/complete/{id}")
+    @Operation(summary = "完成订单", description = "将订单状态从'待评价'改为'已完成' (通常在评价后调用)")
+    public ResponseEntity<?> completeOrder(@PathVariable Long id) {
+        try {
+            orderServer.completeOrder(id);
+            return ResponseEntity.status(HttpStatus.OK).body(
+                    MapUtils.of(
+                            MapUtils.Pair.of("code", HttpStatus.OK.value()),
+                            MapUtils.Pair.of("message", "订单已完成"),
+                            MapUtils.Pair.of("data", orderServer.getOrderById(id))
+                    )
+            );
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    MapUtils.of(
+                            MapUtils.Pair.of("code", HttpStatus.BAD_REQUEST.value()),
+                            MapUtils.Pair.of("message", convertErrorMessage(e.getMessage()))
                     )
             );
         }

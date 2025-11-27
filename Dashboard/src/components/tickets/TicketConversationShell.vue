@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue"
+import { computed, nextTick, ref, watch } from "vue"
 import type { UserRole } from "@/components/dashboard/types"
 import TicketWorkspace from "@/components/tickets/TicketWorkspace.vue"
 import type { TicketRecord } from "@/mock/data/tickets"
@@ -28,22 +28,21 @@ const props = withDefaults(
   },
 )
 
-const sessionRole = ref<UserRole>(DEFAULT_ROLE)
+function resolveInitialRole() {
+  if (typeof window === "undefined")
+    return DEFAULT_ROLE
+  return readAuthSession()?.role ?? DEFAULT_ROLE
+}
 
-onMounted(() => {
-  const session = readAuthSession()
-  if (session?.role) {
-    sessionRole.value = session.role
-  }
-})
+const sessionRole = ref<UserRole>(resolveInitialRole())
 
 const resolvedRole = computed<UserRole>(() => props.role ?? sessionRole.value)
 
-const tickets = ticketCenterMock.tickets
+const tickets = computed(() => ticketCenterMock[resolvedRole.value].tickets)
 
 const ticketDetail = computed<TicketRecord | undefined>(() => {
   if (props.context !== "ticket" || !props.ticketId) return undefined
-  return tickets.find((ticket) => ticket.id === props.ticketId)
+  return tickets.value.find((ticket) => ticket.id === props.ticketId)
 })
 
 const allTicketMessages = ref<TicketMessage[]>([...ticketConversationMock.messages])

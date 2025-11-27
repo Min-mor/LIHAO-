@@ -26,7 +26,7 @@ interface TrendDataset {
   data: TrendDatum[]
 }
 
-export type TrendChartType = "revenue" | "orders"
+export type TrendChartType = "revenue" | "orders" | "users"
 
 export const revenueSummaries: RevenueSummary[] = [
   { range: "day", revenue: 68000, orders: 128, averageOrderValue: 531, growthRate: 4.8 },
@@ -136,6 +136,56 @@ export const chartDatasets: ChartDataMap = {
         { label: "Q2", value: 9800 },
         { label: "Q3", value: 10100 },
         { label: "Q4", value: 10820 },
+      ],
+    },
+  },
+  users: {
+    day: {
+      label: "小时新增用户",
+      data: [
+        { label: "08:00", value: 30 },
+        { label: "10:00", value: 48 },
+        { label: "12:00", value: 52 },
+        { label: "14:00", value: 60 },
+        { label: "16:00", value: 66 },
+        { label: "18:00", value: 58 },
+        { label: "20:00", value: 42 },
+      ],
+    },
+    week: {
+      label: "近 7 天新增用户",
+      data: [
+        { label: "Mon", value: 180 },
+        { label: "Tue", value: 210 },
+        { label: "Wed", value: 190 },
+        { label: "Thu", value: 240 },
+        { label: "Fri", value: 260 },
+        { label: "Sat", value: 230 },
+        { label: "Sun", value: 250 },
+      ],
+    },
+    month: {
+      label: "周新增用户",
+      data: Array.from({ length: 4 }).map((_, index) => ({
+        label: `Week ${index + 1}`,
+        value: 1400 + index * 120,
+      })),
+    },
+    quarter: {
+      label: "季度新增用户",
+      data: [
+        { label: "Q1-M1", value: 4200 },
+        { label: "Q1-M2", value: 4480 },
+        { label: "Q1-M3", value: 4720 },
+      ],
+    },
+    year: {
+      label: "年季度新增用户",
+      data: [
+        { label: "Q1", value: 12600 },
+        { label: "Q2", value: 13400 },
+        { label: "Q3", value: 14100 },
+        { label: "Q4", value: 14850 },
       ],
     },
   },

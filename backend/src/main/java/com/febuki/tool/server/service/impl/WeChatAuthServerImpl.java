@@ -10,9 +10,11 @@ import com.febuki.tool.server.entity.WeChatSessionKey;
 import com.febuki.tool.server.mapper.WeChatAuthMapper;
 import com.febuki.tool.server.mapper.WeChatSessionKeyMapper;
 import com.febuki.tool.server.service.WeChatAuthServer;
+import com.febuki.tool.server.service.WeChatCacheServer;
 import com.febuki.tool.server.utils.JwtTokenUtil;
 import com.febuki.tool.server.utils.MapUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -23,19 +25,29 @@ import java.util.Map;
 @Service("wechatAuthServer")
 public class WeChatAuthServerImpl extends ServiceImpl<WeChatAuthMapper, WeChatAuth> implements WeChatAuthServer {
 
-    private final WeChatSessionKeyMapper weChatSessionKeyMapper;
     private final WeChatConfig wechatConfig;
     private final JwtTokenUtil jwtTokenUtil;
+    private final WeChatCacheServer weChatCacheServer;
 
-    public WeChatAuthServerImpl(WeChatSessionKeyMapper weChatSessionKeyMapper, WeChatConfig wechatConfig, JwtTokenUtil jwtTokenUtil) {
-        this.weChatSessionKeyMapper = weChatSessionKeyMapper;
+    public WeChatAuthServerImpl(
+            @Autowired WeChatConfig wechatConfig,
+            @Autowired JwtTokenUtil jwtTokenUtil,
+            @Autowired WeChatCacheServer weChatCacheServer
+    ) {
         this.wechatConfig = wechatConfig;
         this.jwtTokenUtil = jwtTokenUtil;
+        this.weChatCacheServer = weChatCacheServer;
     }
 
     @Override
-    public String getSessionKey(String sessionKey) {
-        return weChatSessionKeyMapper.selectOne(new QueryWrapper<WeChatSessionKey>().eq("sessionKey", sessionKey)).getSessionKey();
+    public String getSessionKey(String sessionKeyKey) {
+        log.info("获取微信SessionKey - sessionKeyKey: {}", sessionKeyKey);
+        String sessionKey = weChatCacheServer.getSessionKey(sessionKeyKey);
+        if (sessionKey == null) {
+            log.warn("微信SessionKey不存在或已过期 - sessionKeyKey: {}", sessionKeyKey);
+            throw new RuntimeException("SessionKey不存在或已过期");
+        }
+        return sessionKey;
     }
 
     @Override
@@ -46,92 +58,82 @@ public class WeChatAuthServerImpl extends ServiceImpl<WeChatAuthMapper, WeChatAu
 
     @Override
     public boolean isExpired(String sessionKeyKey) {
-        WeChatSessionKey key = weChatSessionKeyMapper.selectOne(new QueryWrapper<WeChatSessionKey>().eq("session_key_key", sessionKeyKey));
-
-        return key.getExpirationTime().isBefore(LocalDateTime.now());
+        boolean expired = !weChatCacheServer.hasValidSessionKey(sessionKeyKey);
+        log.info("检查微信SessionKey是否过期 - OpenID: {}, 结果: {}", sessionKeyKey, expired);
+        return expired;
     }
 
     @Override
     public void saveSessionKey(String sessionKeyKey, String sessionKey) {
-        // 判断 session_key 是否存在
-        WeChatSessionKey key = weChatSessionKeyMapper.selectOne(new QueryWrapper<WeChatSessionKey>().eq("session_key_key", sessionKeyKey));
-
-        if (key == null) {
-            // 创建 session_key
-            key = new WeChatSessionKey();
-            key.setSessionKeyKey(sessionKeyKey);
-            key.setSessionKey(sessionKey);
-            key.setExpirationTime(LocalDateTime.now().plusSeconds(jwtTokenUtil.getExpiration()));
-            weChatSessionKeyMapper.insert(key);
-            return;
-        }
-
-        // 判断 session_key 是否过期
-        if (isExpired(key.getSessionKeyKey())) {
-            // 更新 session_key
-            key.setSessionKey(sessionKey);
-            key.setExpirationTime(LocalDateTime.now().plusSeconds(jwtTokenUtil.getExpiration()));
-            weChatSessionKeyMapper.updateById(key);
-        }
+        log.info("保存微信SessionKey - sessionKeyKey: {}", sessionKeyKey);
+        // 微信session_key默认有效期为30天，这里设置缓存过期时间为29天，确保提前更新
+        int expirationSeconds = 29 * 24 * 60 * 60; // 29天
+        weChatCacheServer.saveSessionKey(sessionKeyKey, sessionKey, expirationSeconds);
     }
 
     @Override
     public void deleteSessionKey(String sessionKeyKey) {
-        // 判断 sessionKey 是否存在
-        WeChatSessionKey key = weChatSessionKeyMapper.selectOne(new QueryWrapper<WeChatSessionKey>().eq("session_key_key", sessionKeyKey));
-        if (key != null) {
-            // 删除 sessionKey
-            baseMapper.deleteById(key.getId());
-        }
+        log.info("删除微信SessionKey - sessionKeyKey: {}", sessionKeyKey);
+        weChatCacheServer.deleteSessionKey(sessionKeyKey);
     }
 
     @Override
     public void setExpirationTime(String sessionKey, int minutes) {
-
-        WeChatSessionKey key = weChatSessionKeyMapper.selectOne(new QueryWrapper<WeChatSessionKey>().eq("sessionKey", sessionKey));
-        // 判断 sessionKey 是否存在
-        if (key == null) {
-            throw new RuntimeException("token不存在");
-        }
-
-        key.setExpirationTime(LocalDateTime.now().plusSeconds(minutes));
-        weChatSessionKeyMapper.updateById(key);
+        log.warn("设置微信SessionKey过期时间功能已废弃 - sessionKey: {}, 分钟: {}", sessionKey, minutes);
+        // 由于使用缓存自动过期，此方法不再需要
+        // 可以保留方法签名但不做具体实现，或者抛出异常
+        throw new UnsupportedOperationException("该方法已废弃，SessionKey过期时间由缓存自动管理");
     }
 
     @Override
     public Map<String, Object> wechatLogin(String code) {
-        // 调用微信接口获取 openid 和 session_key
-        Map<String, String> wechatResult  = getWeChatSession(code);
-        String openid = wechatResult.get("openid");
-        String sessionKey = wechatResult.get("session_key");
+        log.info("开始微信登录 - Code: {}", code);
 
-        if (openid == null) {
-            throw new RuntimeException("微信登录失败" + wechatResult.get("errmsg"));
+        try {
+            // 调用微信接口获取 openid 和 session_key
+            Map<String, String> wechatResult  = getWeChatSession(code);
+            String openid = wechatResult.get("openid");
+            String sessionKey = wechatResult.get("session_key");
+            String expiresIn = wechatResult.get("expires_in");
+
+            if (openid == null) {
+                String errmsg = wechatResult.get("errmsg");
+                log.error("微信登录失败 - Code: {}, 错误: {}", code, errmsg);
+                throw new RuntimeException("微信登录失败: " + errmsg);
+            }
+
+            log.info("微信登录成功 - OpenID: {}", openid);
+
+            // 查询用户是否存在
+            WeChatAuth user = getUserByOpenid(openid);
+            log.info("查询用户信息 - OpenID: {}, 用户: {}", openid, user);
+            if (user == null) {
+                // 创建用户
+                log.info("用户不存在，创建新用户 - OpenID: {}", openid);
+                createUser(openid);
+                user = getUserByOpenid(openid);
+            }
+
+            // 生成 sessionKey
+            String token = jwtTokenUtil.generateWeChatToken(user.getOpenId(), openid);
+
+            // 存储 session_key 到缓存
+            String sessionKeyKey = "wechat:session_key:" + openid;
+            saveSessionKey(sessionKeyKey, sessionKey);
+
+            // 返回结果
+            Map<String, Object> result = MapUtils.of(
+                    MapUtils.Pair.of("loginType", "wechat"),
+                    MapUtils.Pair.of("token", token),
+                    MapUtils.Pair.of("userInfo", user),
+                    MapUtils.Pair.of("expiresIn", jwtTokenUtil.getExpiration())
+            );
+            log.info("微信登录完成 - OpenID: {}, Token生成成功", openid);
+            return result;
+        } catch (Exception e) {
+            log.error("微信登录异常 - Code: {}", code, e);
+            throw new RuntimeException("微信登录异常: " + e.getMessage());
         }
-
-        // 查询用户是否存在
-        WeChatAuth user = getUserByOpenid(openid);
-        log.info("用户信息: {}", user);
-        if (user == null) {
-            // 创建用户
-            createUser(openid);
-            user = getUserByOpenid(openid);
-        }
-
-        // 生成 sessionKey
-        String token = jwtTokenUtil.generateWeChatToken(user.getOpenId(), openid);
-
-        // 存储 session_key
-        String sessionKeyKey = "wechat:session_key:" + openid;
-        saveSessionKey(sessionKeyKey, sessionKey);
-
-        // 返回结果
-        return MapUtils.of(
-                MapUtils.Pair.of("loginType", "wechat"),
-                MapUtils.Pair.of("token", token),
-                MapUtils.Pair.of("userInfo", user),
-                MapUtils.Pair.of("expiresIn", jwtTokenUtil.getExpiration())
-        );
     }
 
     @Override
@@ -142,20 +144,35 @@ public class WeChatAuthServerImpl extends ServiceImpl<WeChatAuthMapper, WeChatAu
                 "&js_code=" + code +
                 "&grant_type=authorization_code";
 
-        log.info("微信登录接口调用开始 url: {}", url);
+        log.info("调用微信登录接口 - URL: {}", url.replace(wechatConfig.getAppSecret(), "***"));
         try {
             RestTemplate restTemplate = new RestTemplate();
             String response = restTemplate.getForObject(url, String.class);
-            return JSON.parseObject(response, Map.class);
+            log.info("微信接口响应: {}", response);
+
+            Map<String, String> result = JSON.parseObject(response, Map.class);
+            // 检查微信返回错误
+            if (result != null && result.containsKey("errcode")) {
+                String errcode = result.get("errcode");
+                String errmsg = result.get("errmsg");
+                if (!"0".equals(errcode)) {
+                    log.error("微信接口返回错误 - ErrCode: {}, ErrMsg: {}", errcode, errmsg);
+                    throw new RuntimeException("微信接口错误: " + errmsg);
+                }
+            }
+
+            return result;
         } catch (Exception e) {
             log.error("微信登录接口调用失败", e);
-            throw new RuntimeException("微信服务异常");
+            throw new RuntimeException("微信服务异常: " + e.getMessage());
         }
     }
 
     @Override
     public void createUser(String openid) {
         // 创建用户
+        log.info("创建微信用户 - OpenID: {}", openid);
+
         if (openid == null) {
             throw new RuntimeException("openid不能为空");
         }
@@ -164,13 +181,33 @@ public class WeChatAuthServerImpl extends ServiceImpl<WeChatAuthMapper, WeChatAu
         if (user == null) {
             user = new WeChatAuth();
             user.setOpenId(openid);
+            // 设置默认用户名
+            user.setNickName("微信用户_" + openid.substring(openid.length() - 8));
             baseMapper.insert(user);
+            log.info("微信用户创建成功 - OpenID: {}", openid);
+        } else {
+            log.info("微信用户已存在 - OpenID: {}", openid);
         }
     }
 
     @Override
     public WeChatAuth getUserByOpenid(String openid) {
-        return baseMapper.selectOne(new QueryWrapper<WeChatAuth>().eq("open_id", openid));
+        log.debug("查询微信用户 - OpenID: {}", openid);
+        // 先尝试从缓存获取
+        Object cachedUser = weChatCacheServer.getUserInfo(openid);
+        if (cachedUser instanceof WeChatAuth) {
+            log.debug("从缓存获取用户信息 - OpenID: {}", openid);
+            return (WeChatAuth) cachedUser;
+        }
+
+        // 缓存中没有，从数据库查询
+        WeChatAuth user = baseMapper.selectOne(new QueryWrapper<WeChatAuth>().eq("open_id", openid));
+        if (user != null) {
+            // 存入缓存
+            weChatCacheServer.saveUserInfo(openid, user);
+        }
+
+        return user;
     }
 
     @Override

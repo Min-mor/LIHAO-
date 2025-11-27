@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.febuki.tool.server.dto.OrderDTO;
+import com.febuki.tool.server.dto.enums.OrderStatus;
+import com.febuki.tool.server.dto.enums.PaymentStatus;
 import com.febuki.tool.server.entity.Order;
 import com.febuki.tool.server.entity.OrderItem;
 import com.febuki.tool.server.entity.Product;
@@ -14,9 +16,9 @@ import com.febuki.tool.server.mapper.OrderMapper;
 import com.febuki.tool.server.mapper.ProductMapper;
 import com.febuki.tool.server.mapper.UserMapper;
 import com.febuki.tool.server.service.OrderServer;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -34,82 +36,77 @@ public class OrderServerImpl extends ServiceImpl<OrderMapper, Order> implements 
     }
 
     @Override
-    public void createOrder(OrderDTO orderDTO) {
-        // 1. 校验用户
-        if (orderDTO.getUserId() == null) {
-            throw new RuntimeException("USER_ID_NULL");
-        }
+    public Order createOrder(OrderDTO orderDTO) {
+        // 1. 参数校验
+        if (orderDTO.getUserId() == null) throw new RuntimeException("USER_ID_NULL");
+        if (orderDTO.getProductId() == null) throw new RuntimeException("PRODUCT_ID_NULL");
+        int quantity = (orderDTO.getQuantity() == null || orderDTO.getQuantity() < 1) ? 1 : orderDTO.getQuantity();
+
+        // 2. 校验用户和商品
         User user = userMapper.selectById(orderDTO.getUserId());
-        if (user == null) {
-            throw new RuntimeException("USER_NOT_FOUND");
-        }
+        if (user == null) throw new RuntimeException("USER_NOT_FOUND");
 
-        // 2. 校验商品
-        if (orderDTO.getProductId() == null) {
-            throw new RuntimeException("PRODUCT_ID_NULL");
-        }
         Product product = productMapper.selectById(orderDTO.getProductId());
-        if (product == null) {
-            throw new RuntimeException("PRODUCT_NOT_FOUND");
-        }
-        if (product.getStatus() != 1) {
-            throw new RuntimeException("PRODUCT_OFF_SHELF");
-        }
-        if (product.getStock() < 1) {
-            throw new RuntimeException("PRODUCT_OUT_OF_STOCK");
+        if (product == null) throw new RuntimeException("PRODUCT_NOT_FOUND");
+        if (!product.isStatus()) throw new RuntimeException("PRODUCT_OFF_SHELF");
+        if (product.getStock() < quantity) throw new RuntimeException("PRODUCT_OUT_OF_STOCK");
+
+        // 3. 扣减库存
+        product.setStock(product.getStock() - quantity);
+        if (productMapper.updateById(product) < 1) {
+            throw new RuntimeException("SYSTEM_BUSY");
         }
 
-        // 3. 创建订单实体
+        // 4. 创建订单主表
         Order order = new Order();
-        BeanUtils.copyProperties(orderDTO, order);
+        order.setUserId(user.getId());
+        order.setProductId(product.getId());
         order.setCreatedAt(LocalDateTime.now());
+        order.setTotalAmount(product.getPrice().multiply(new BigDecimal(quantity)));
+        order.setPaymentStatus(PaymentStatus.UNPAID.getCode());
+        order.setOrderStatus(OrderStatus.UNFINISHED.getCode());
 
-        // 使用商品当前价格
-        order.setTotalAmount(product.getPrice());
-        // 设置默认状态
-        order.setOrderStatus((short) 0); // 0: 待支付
-        order.setPaymentStatus(false);
+        // 生成唯一订单编号
+        long timestamp = System.currentTimeMillis();
+        int random = ThreadLocalRandom.current().nextInt(100, 1000);
+        order.setOrderSN(Long.parseLong(timestamp + String.valueOf(random)));
 
-        // 生成唯一订单号
-        // 逻辑：时间戳(毫秒) + 3位随机数
-        // 即使在高并发下，同一毫秒内也能支持1000个并发不重复
-        if (order.getOrderSN() == null) {
-            long timestamp = System.currentTimeMillis();
-            // 随机生成 100-999 的数字
-            int random = ThreadLocalRandom.current().nextInt(100, 1000);
-            long uniqueOrderSN = Long.parseLong(timestamp + String.valueOf(random));
-            order.setOrderSN(uniqueOrderSN);
-        }
+        // 插入主表
+        baseMapper.insert(order);
 
-        // 4. 保存订单
-        try {
-            baseMapper.insert(order);
-        } catch (Exception e) {
-            // 极低概率下如果还是重复，抛出友好提示（或者在此处做递归重试）
-            if (e.getMessage().contains("Duplicate entry")) {
-                throw new RuntimeException("系统繁忙，请重试");
-            }
-            throw e;
-        }
-
-        // 5. 创建订单项 (这里简化为单商品)
+        // 5. 创建订单项 (OrderItems)
         OrderItem orderItem = new OrderItem();
         orderItem.setOrderId(order.getId());
         orderItem.setProductId(product.getId());
-        orderItem.setProductTitle(product.getName());
-        orderItem.setUnitPrice(product.getPrice());
-        orderItem.setQuantity(1L); // 默认为1，后续可从DTO获取
+        orderItem.setProductTitle(product.getName()); // 快照：商品名
+        orderItem.setUnitPrice(product.getPrice());   // 快照：下单价格
+        orderItem.setQuantity((long) quantity);       // 核心：数量
+
+        // 插入子表
         orderItemMapper.insert(orderItem);
+
+        return order;
     }
 
     @Override
-    public IPage<Order> listOrders(int page, int limit, Long userId) {
-        QueryWrapper<Order> queryWrapper = new QueryWrapper<>();
-        if (userId != null) {
-            queryWrapper.eq("user_id", userId);
-        }
-        queryWrapper.orderByDesc("created_at");
-        return baseMapper.selectPage(new Page<>(page, limit), queryWrapper);
+    public IPage<OrderDTO> listOrders(int page, int limit) {
+        return baseMapper.selectPage(
+                new Page<>(page, limit),
+                new QueryWrapper<>()
+        ).convert(
+                order -> new OrderDTO(
+                        order.getId(),
+                        order.getOrderSN(),
+                        order.getUserId(),
+                        order.getProductId(),
+                        order.getTotalAmount(),
+                        order.getPaymentStatus(),
+                        order.getOrderStatus(),
+                        order.getCreatedAt()
+                )
+        ).setTotal(
+                baseMapper.selectCount(null)
+        );
     }
 
     @Override
@@ -117,34 +114,46 @@ public class OrderServerImpl extends ServiceImpl<OrderMapper, Order> implements 
         return baseMapper.selectById(id);
     }
 
-//    @Override
-//    public void updateOrder(OrderDTO orderDTO) {
-//        if (orderDTO.getId() == null) {
-//            throw new RuntimeException("ORDER_ID_NULL");
-//        }
-//
-//        // 检查订单是否存在
-//        Order existingOrder = baseMapper.selectById(orderDTO.getId());
-//        if (existingOrder == null) {
-//            throw new RuntimeException("ORDER_NOT_FOUND");
-//        }
-//
-//        Order order = new Order();
-//        BeanUtils.copyProperties(orderDTO, order);
-//        baseMapper.updateById(order);
-//    }
+    @Override
+    public void payOrder(Long id) {
+        Order order = baseMapper.selectById(id);
+        if (order == null) throw new RuntimeException("ORDER_NOT_FOUND");
+        if (order.getPaymentStatus() == PaymentStatus.PAID.getCode()) {
+            throw new RuntimeException("ORDER_ALREADY_PAID");
+        }
+        order.setPaymentStatus(PaymentStatus.PAID.getCode());
+        baseMapper.updateById(order);
+    }
 
     @Override
-    public void deleteOrder(Long id) {
-        // 检查订单是否存在
-        if (baseMapper.selectById(id) == null) {
-            throw new RuntimeException("ORDER_NOT_FOUND");
+    public void confirmOrder(Long id) {
+        Order order = baseMapper.selectById(id);
+        if (order == null) throw new RuntimeException("ORDER_NOT_FOUND");
+
+        // 只有"未完成"状态的订单才能确认（变成待评价）
+        if (order.getOrderStatus() != OrderStatus.UNFINISHED.getCode()) {
+            throw new RuntimeException("ORDER_STATUS_ERROR");
+        }
+        // 必须支付后才能确认
+        if (order.getPaymentStatus() != PaymentStatus.PAID.getCode()) {
+            throw new RuntimeException("ORDER_NOT_PAID");
         }
 
-        // 1. 先删除子表数据 (OrderItems)
-        orderItemMapper.delete(new QueryWrapper<OrderItem>().eq("order_id", id));
+        order.setOrderStatus(OrderStatus.PENDING_EVALUATION.getCode()); // 1: 待评价
+        baseMapper.updateById(order);
+    }
 
-        // 2. 再删除主表数据 (Order)
-        baseMapper.deleteById(id);
+    @Override
+    public void completeOrder(Long id) {
+        Order order = baseMapper.selectById(id);
+        if (order == null) throw new RuntimeException("ORDER_NOT_FOUND");
+
+        // 只有"待评价"状态的订单才能完成（评价后）
+        if (order.getOrderStatus() != OrderStatus.PENDING_EVALUATION.getCode()) {
+            throw new RuntimeException("ORDER_STATUS_ERROR");
+        }
+
+        order.setOrderStatus(OrderStatus.COMPLETED.getCode()); // 2: 已完成
+        baseMapper.updateById(order);
     }
 }

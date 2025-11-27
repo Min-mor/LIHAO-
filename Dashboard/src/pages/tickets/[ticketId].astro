@@ -1,14 +1,12 @@
 ---
 import Layout from "../../layouts/Layout.astro"
 import TicketConversationShell from "@/components/tickets/TicketConversationShell.vue"
-import type { UserRole } from "@/components/dashboard/types"
 
 export const prerender = false
 
-const role: UserRole = "admin"
 const { ticketId = "" } = Astro.params
 ---
 
 <Layout title={`工单 ${ticketId} - Trip 控制台`}>
-  <TicketConversationShell client:load ticketId={ticketId} role={role} activePath="/tickets" />
+  <TicketConversationShell client:load ticketId={ticketId} activePath="/tickets" />
 </Layout>

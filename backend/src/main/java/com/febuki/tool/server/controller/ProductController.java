@@ -32,6 +32,8 @@ public class ProductController {
                 return "商品ID不能为空";
             case "PRODUCT_NOT_FOUND":
                 return "更新失败：商品不存在或已删除";
+            case "NO_PERMISSION":
+                return "操作失败：无权修改该商品信息，仅限商家本人或管理员操作";
             default:
                 return "操作失败: " + errorCode;
         }
@@ -86,7 +88,8 @@ public class ProductController {
             return ResponseEntity.status(HttpStatus.OK).body(
                     MapUtils.of(
                             MapUtils.Pair.of("code", HttpStatus.OK.value()),
-                            MapUtils.Pair.of("message", "添加成功")
+                            MapUtils.Pair.of("message", "添加成功"),
+                            MapUtils.Pair.of("data", productDTO)
                     )
             );
         } catch (RuntimeException e) {
@@ -108,7 +111,8 @@ public class ProductController {
             return ResponseEntity.status(HttpStatus.OK).body(
                     MapUtils.of(
                             MapUtils.Pair.of("code", HttpStatus.OK.value()),
-                            MapUtils.Pair.of("message", "更新成功")
+                            MapUtils.Pair.of("message", "更新成功"),
+                            MapUtils.Pair.of("data", productDTO)
                     )
             );
         } catch (RuntimeException e) {
@@ -136,7 +140,7 @@ public class ProductController {
             );
         }
 
-        if (product.getStatus() != 1) {
+        if (!product.isStatus()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                     MapUtils.of(
                             MapUtils.Pair.of("code", HttpStatus.NOT_FOUND.value()),
@@ -144,7 +148,7 @@ public class ProductController {
                     )
             );
         }
-
+        productServer.deleteProduct(id);
         return ResponseEntity.status(HttpStatus.OK).body(
                 MapUtils.of(
                         MapUtils.Pair.of("code", HttpStatus.OK.value()),

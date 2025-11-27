@@ -32,7 +32,7 @@ public class Order {
     private BigDecimal totalAmount;
 
     @TableField("payment_status")
-    private boolean paymentStatus;
+    private short paymentStatus;
 
     @TableField("order_status")
     private short orderStatus;

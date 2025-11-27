@@ -1,7 +1,8 @@
 import type {
   ILoginForm,
 } from '@/api/modules/auth/login'
-import type { IAuthLoginRes } from '@/api/modules/auth/types'
+import type { SmsLoginResponseUser } from '@/api/modules/auth/sms'
+import type { IAuthLoginRes, IUserInfoRes } from '@/api/modules/auth/types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue' // 修复：导入 computed
 import {
@@ -11,10 +12,76 @@ import {
   wxLogin as _wxLogin,
   getWxCode,
 } from '@/api/modules/auth/login'
+import { smsLogin } from '@/api/modules/auth/sms'
 import { isDoubleTokenRes, isSingleTokenRes } from '@/api/modules/auth/types'
 import { mockLoginByPhone, resetActiveUser } from '@/mock/auth'
 import { isDoubleTokenMode } from '@/utils'
 import { useUserStore } from './user'
+
+const DEFAULT_TOKEN_EXPIRE_SECONDS = 7 * 24 * 60 * 60 // 7天兜底
+
+function decodeBase64Url(segment: string) {
+  const normalized = segment.replace(/-/g, '+').replace(/_/g, '/')
+  const padding = normalized.length % 4 === 0 ? '' : '='.repeat(4 - (normalized.length % 4))
+  const base64 = normalized + padding
+  if (typeof atob === 'function')
+    return atob(base64)
+
+  // 手写兜底，仅在极端环境下使用
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+  let result = ''
+  let buffer = 0
+  let bitCount = 0
+  for (const char of base64.replace(/=+$/, '')) {
+    const index = chars.indexOf(char)
+    if (index === -1)
+      continue
+    buffer = (buffer << 6) | index
+    bitCount += 6
+    if (bitCount >= 8) {
+      bitCount -= 8
+      const byte = (buffer >> bitCount) & 0xFF
+      result += String.fromCharCode(byte)
+    }
+  }
+  return result
+}
+
+function parseJwtExpireSeconds(token: string) {
+  try {
+    const segments = token.split('.')
+    if (segments.length < 2)
+      return DEFAULT_TOKEN_EXPIRE_SECONDS
+
+    const decoded = decodeBase64Url(segments[1])
+    if (!decoded)
+      return DEFAULT_TOKEN_EXPIRE_SECONDS
+
+    const payload = JSON.parse(decoded)
+    if (payload.exp) {
+      const diffMs = payload.exp * 1000 - Date.now()
+      if (diffMs > 0)
+        return Math.floor(diffMs / 1000)
+    }
+  }
+  catch (error) {
+    console.warn('[auth] 解析 token 过期时间失败', error)
+  }
+  return DEFAULT_TOKEN_EXPIRE_SECONDS
+}
+
+function mapUserInfoFromSms(user: SmsLoginResponseUser): IUserInfoRes {
+  return {
+    userId: user.id,
+    nickname: user.nickname || user.username || `用户_${user.id}`,
+    avatar: user.avatar || '',
+    username: user.username,
+    tel: user.tel,
+    email: user.email,
+    role: user.role,
+    status: user.status,
+  } as IUserInfoRes
+}
 
 // 初始化状态
 const tokenInfoState = isDoubleTokenMode
@@ -54,6 +121,30 @@ export const useTokenStore = defineStore(
       }
     }
 
+    const loginBySms = async (phone: string, code: string) => {
+      try {
+        const res = await smsLogin({ phone, code })
+        if (!res?.token) {
+          throw new Error('登录返回信息缺少 token')
+        }
+        const expiresIn = parseJwtExpireSeconds(res.token)
+        await _postLogin({ token: res.token, expiresIn }, mapUserInfoFromSms(res.user))
+        uni.showToast({
+          title: '登录成功',
+          icon: 'success',
+        })
+        return res
+      }
+      catch (error) {
+        console.error('短信登录失败:', error)
+        uni.showToast({
+          title: error instanceof Error ? error.message : '短信登录失败，请重试',
+          icon: 'none',
+        })
+        throw error
+      }
+    }
+
     /**
      * 判断token是否过期
      */
@@ -89,10 +180,15 @@ export const useTokenStore = defineStore(
      * 登录成功后处理逻辑
      * @param tokenInfo 登录返回的token信息
      */
-    async function _postLogin(tokenInfo: IAuthLoginRes) {
+    async function _postLogin(tokenInfo: IAuthLoginRes, userInfo?: IUserInfoRes) {
       setTokenInfo(tokenInfo)
       const userStore = useUserStore()
-      await userStore.fetchUserInfo()
+      if (userInfo) {
+        userStore.setUserInfo(userInfo)
+      }
+      else {
+        await userStore.fetchUserInfo()
+      }
     }
 
     /**
@@ -305,6 +401,7 @@ export const useTokenStore = defineStore(
       // 核心API方法
       login,
       loginByPhoneMock,
+      loginBySms,
       wxLogin,
       logout,
       logoutByMock,

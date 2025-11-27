@@ -27,12 +27,15 @@ const form = reactive({
 })
 
 const loginMode = ref<'sms' | 'password'>('sms')
+const useMockAuth = import.meta.env.VITE_API_MODE !== 'real'
 
 const { info: showInfo } = useToast()
 const tokenStore = useTokenStore()
 
 const showPassword = ref(false)
 const redirectUrl = ref<string | null>(null)
+
+const cleanedPhone = computed(() => form.phone.replace(/\s/g, ''))
 
 const sms = useSmsCode({
   phoneGetter: () => cleanedPhone.value,
@@ -52,8 +55,6 @@ const formattedPhone = computed({
       c ? `${a} ${b} ${c}` : `${a} ${b}`).trim()
   },
 })
-
-const cleanedPhone = computed(() => form.phone.replace(/\s/g, ''))
 const showCodeField = computed(() => isSmsMode.value && sms.hasRequested.value)
 const canSendCode = computed(
   () => isSmsMode.value && sms.hasRequested.value && validatePhone(cleanedPhone.value) && sms.countdown.value === 0 && !sms.sending.value,
@@ -140,22 +141,21 @@ async function handleSubmit() {
   }
 
   try {
-    if (import.meta.env.DEV) {
+    if (useMockAuth) {
       const password = isSmsMode.value ? undefined : form.password
       await tokenStore.loginByPhoneMock(cleanedPhone.value, password)
     }
+    else if (isSmsMode.value) {
+      await tokenStore.loginBySms(cleanedPhone.value, form.code)
+    }
     else {
-      if (isSmsMode.value) {
-        showInfo({ msg: '请接入短信登录接口' })
-        return
-      }
       await tokenStore.login({
         username: cleanedPhone.value,
         password: form.password,
       })
     }
 
-    showInfo({ msg: import.meta.env.DEV ? '登录成功（mock）' : '登录成功' })
+    showInfo({ msg: useMockAuth ? '登录成功（mock）' : '登录成功' })
     resetCodeState()
     navigateAfterLogin()
   }
@@ -175,9 +175,6 @@ function toggleLoginMode() {
   form.password = ''
   resetCodeState()
 }
-
-function mockSendCode() { return Promise.resolve() }
-function generateMockCode() { return '' }
 
 function navigateAfterLogin() {
   const target = redirectUrl.value || HOME_PAGE

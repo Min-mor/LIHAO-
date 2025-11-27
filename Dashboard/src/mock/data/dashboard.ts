@@ -144,6 +144,20 @@ export const dashboardMock: Record<UserRole, DashboardDataset> = {
         type: "bar",
         data: buildSeriesFromArray([180, 220, 300, 260, 380, 280, 200]),
       },
+      {
+        id: "platform-revenue",
+        title: "全站流水走势",
+        subtitle: "单位：万元",
+        type: "line",
+        data: buildSeriesFromArray([520, 560, 610, 640, 670, 650, 710]),
+      },
+      {
+        id: "new-users",
+        title: "新增用户",
+        subtitle: "单位：人",
+        type: "line",
+        data: buildSeriesFromArray([180, 210, 190, 240, 260, 230, 250]),
+      },
     ],
     quickLinks: [
       { id: "ql-1", label: "商家审核列表", action: "立即处理" },

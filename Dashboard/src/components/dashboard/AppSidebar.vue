@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getCurrentInstance } from "vue"
 import {
   LayoutDashboard,
   Store,
@@ -25,6 +26,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
+import { clearAuthSession } from "@/lib/auth"
 
 const props = withDefaults(defineProps<{ role?: UserRole; activePath?: string }>(), {
   role: "merchant",
@@ -32,6 +34,17 @@ const props = withDefaults(defineProps<{ role?: UserRole; activePath?: string }>
 })
 
 const emit = defineEmits<{ (e: "logout"): void }>()
+
+const instance = getCurrentInstance()
+
+function handleLogout() {
+  emit("logout")
+  const hasListener = Boolean(instance?.vnode.props?.onLogout)
+  if (!hasListener && typeof window !== "undefined") {
+    clearAuthSession()
+    window.location.href = "/"
+  }
+}
 
 const navMap: Record<UserRole, { label: string; icon: any; path: string; badge?: number }[]> = {
   merchant: [
@@ -93,7 +106,7 @@ const navMap: Record<UserRole, { label: string; icon: any; path: string; badge?:
     <SidebarFooter class="sidebar-footer">
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton class="logout-button" @click="emit('logout')">
+          <SidebarMenuButton class="logout-button" @click="handleLogout">
             <LogOut class="menu-icon" />
             <span>登出</span>
           </SidebarMenuButton>
@@ -135,7 +148,11 @@ const navMap: Record<UserRole, { label: string; icon: any; path: string; badge?:
 }
 
 .menu-button--active {
-  @apply bg-primary font-semibold text-white shadow-sm hover:bg-primary;
+  @apply bg-primary font-semibold text-white shadow-sm hover:bg-primary text-white;
+}
+
+.menu-button--active:hover {
+  @apply text-white;
 }
 
 .menu-link {

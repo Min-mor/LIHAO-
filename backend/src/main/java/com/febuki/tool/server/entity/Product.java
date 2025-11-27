@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 @Schema(hidden = true)
 @TableName("products")
 public class Product {
-    @TableId(value = "product_id", type = IdType.INPUT)
+    @TableId(value = "product_id", type = IdType.AUTO)
     private Long id;
 
     @TableField("product_name")
@@ -25,6 +25,8 @@ public class Product {
     private String destination;
 
     private BigDecimal price;
+
+    @TableField("Itinerary")
     private String itinerary;
 
     @TableField("user_id")
@@ -32,6 +34,12 @@ public class Product {
 
     private String description;
     private Long stock;
-    private short status;
-    private boolean hotel;
+    private boolean status;
+
+    @TableField("hotel_or_no")
+    private boolean hotelOrNo;
+
+    @TableField("hotel")
+    private String hotel;
+
 }

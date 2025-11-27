@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.febuki.tool.server.dto.MerchantDTO;
+import com.febuki.tool.server.dto.enums.UserRole;
 import com.febuki.tool.server.entity.Merchant;
 import com.febuki.tool.server.entity.Product;
 import com.febuki.tool.server.entity.User;
@@ -40,6 +41,11 @@ public class MerchantServerImpl extends ServiceImpl<MerchantMapper, Merchant> im
             throw new RuntimeException("USER_NOT_FOUND");
         }
 
+        // 校验用户角色是否为 merchant
+        if (!UserRole.MERCHANT.getRoleName().equals(user.getRole())) {
+            throw new RuntimeException("USER_ROLE_NOT_MERCHANT");
+        }
+
         // 3. 校验是否已入驻
         Merchant existingMerchant = baseMapper.selectById(merchantDTO.getId());
         if (existingMerchant != null) {
@@ -64,12 +70,21 @@ public class MerchantServerImpl extends ServiceImpl<MerchantMapper, Merchant> im
     }
 
     @Override
-    public IPage<Merchant> listMerchants(int page, int limit, String name) {
-        QueryWrapper<Merchant> queryWrapper = new QueryWrapper<>();
-        if (StringUtils.hasText(name)) {
-            queryWrapper.like("company_name", name);
-        }
-        return baseMapper.selectPage(new Page<>(page, limit), queryWrapper);
+    public IPage<MerchantDTO> listMerchants(int page, int limit, String name) {
+        return baseMapper.selectPage(
+                new Page<>(page, limit),
+                new QueryWrapper<>()
+        ).convert(
+                order -> new MerchantDTO(
+                        order.getId(),
+                        order.getCompanyName(),
+                        order.getBusinessLicenseURL(),
+                        order.getVerificationStatus(),
+                        order.getApprovedBy()
+                )
+        ).setTotal(
+                baseMapper.selectCount(null)
+        );
     }
 
     @Override
@@ -98,6 +113,17 @@ public class MerchantServerImpl extends ServiceImpl<MerchantMapper, Merchant> im
             }
         }
 
+        // 校验审核人权限
+        if (merchantDTO.getApprovedBy() != null) {
+            User approver = userMapper.selectById(merchantDTO.getApprovedBy());
+            if (approver == null) {
+                throw new RuntimeException("APPROVER_NOT_FOUND");
+            }
+            if (!UserRole.ADMIN.getRoleName().equals(approver.getRole())) {
+                throw new RuntimeException("USER_ROLE_NOT_ADMIN");
+            }
+        }
+
         Merchant merchant = new Merchant();
         BeanUtils.copyProperties(merchantDTO, merchant);
         baseMapper.updateById(merchant);
@@ -110,7 +136,6 @@ public class MerchantServerImpl extends ServiceImpl<MerchantMapper, Merchant> im
         }
 
         // 校验该商户下是否有商品
-        // 如果直接删除商户，会导致商品表的外键约束错误
         Long productCount = Long.valueOf(productMapper.selectCount(new QueryWrapper<Product>().eq("user_id", id)));
         if (productCount > 0) {
             throw new RuntimeException("MERCHANT_HAS_PRODUCTS");
