@@ -1,24 +1,70 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue"
+import { computed, nextTick, onMounted, ref, watch } from "vue"
 import type { UserRole } from "@/components/dashboard/types"
 import TicketWorkspace from "@/components/tickets/TicketWorkspace.vue"
 import type { TicketRecord } from "@/mock/data/tickets"
 import { ticketCenterMock } from "@/mock/data/tickets"
 import type { TicketMessage } from "@/mock/data/ticketConversations"
 import { ticketConversationMock } from "@/mock/data/ticketConversations"
+import type { SupportConversationMeta } from "@/mock/data/supportConversations"
+import { getSupportThread } from "@/mock/data/supportConversations"
+import { readAuthSession } from "@/lib/auth"
 
-const props = withDefaults(defineProps<{ ticketId: string; role?: UserRole; activePath?: string }>(), {
-  role: "admin",
-  activePath: "/tickets",
+type ConversationContext = "ticket" | "support"
+
+const DEFAULT_ROLE: UserRole = "admin"
+
+const props = withDefaults(
+  defineProps<{
+    context?: ConversationContext
+    ticketId?: string
+    threadId?: string
+    role?: UserRole
+    activePath?: string
+  }>(),
+  {
+    context: "ticket" as ConversationContext,
+    activePath: "/tickets",
+  },
+)
+
+const sessionRole = ref<UserRole>(DEFAULT_ROLE)
+
+onMounted(() => {
+  const session = readAuthSession()
+  if (session?.role) {
+    sessionRole.value = session.role
+  }
 })
+
+const resolvedRole = computed<UserRole>(() => props.role ?? sessionRole.value)
 
 const tickets = ticketCenterMock.tickets
 
-const ticketDetail = computed<TicketRecord | undefined>(() => tickets.find((ticket) => ticket.id === props.ticketId))
+const ticketDetail = computed<TicketRecord | undefined>(() => {
+  if (props.context !== "ticket" || !props.ticketId) return undefined
+  return tickets.find((ticket) => ticket.id === props.ticketId)
+})
 
-const allMessages = ref<TicketMessage[]>([...ticketConversationMock.messages])
+const allTicketMessages = ref<TicketMessage[]>([...ticketConversationMock.messages])
+const supportThread = ref<SupportConversationMeta>(getSupportThread(props.threadId))
+const supportMessages = ref<TicketMessage[]>([...supportThread.value.messages])
 
-const currentMessages = computed(() => allMessages.value.filter((message) => message.ticketId === props.ticketId))
+watch(
+  () => props.threadId,
+  (next) => {
+    supportThread.value = getSupportThread(next)
+    supportMessages.value = [...supportThread.value.messages]
+  },
+)
+
+const currentMessages = computed(() => {
+  if (props.context === "support") {
+    return supportMessages.value
+  }
+  if (!props.ticketId) return []
+  return allTicketMessages.value.filter((message) => message.ticketId === props.ticketId)
+})
 
 const newMessage = ref("")
 const sending = ref(false)
@@ -34,7 +80,7 @@ const scrollToBottom = () => {
 }
 
 watch(
-  () => props.ticketId,
+  () => [props.context, props.ticketId, props.threadId],
   () => {
     scrollToBottom()
   },
@@ -46,29 +92,38 @@ watch(
   () => scrollToBottom(),
 )
 
-const handleSendMessage = async () => {
-  const content = newMessage.value.trim()
-  if (!content || !ticketDetail.value) return
-  sending.value = true
-  const payload: TicketMessage = {
-    id: `local-${Date.now()}`,
-    ticketId: props.ticketId,
-    authorType: "agent",
-    authorName: "平台客服",
-    timestamp: new Date().toLocaleString("zh-CN", { hour12: false }),
-    content,
-  }
-  allMessages.value = [...allMessages.value, payload]
-  newMessage.value = ""
-  scrollToBottom()
-  sending.value = false
-}
+const backPath = computed(() => (props.context === "support" ? "/support" : "/tickets"))
 
-const handleBackToList = () => {
-  if (typeof window !== "undefined") {
-    window.location.href = "/tickets"
+const inputPlaceholder = computed(() =>
+  props.context === "support" ? "输入想反馈给平台管理员的内容..." : "输入需要回复的内容...",
+)
+
+const authorMeta = computed(() => {
+  if (resolvedRole.value === "admin") {
+    return {
+      type: "agent" as TicketMessage["authorType"],
+      name: "平台客服",
+    }
   }
-}
+  return {
+    type: "requester" as TicketMessage["authorType"],
+    name: "商家用户",
+  }
+})
+
+const headerCopy = computed(() =>
+  props.context === "support"
+    ? {
+        title: "联系管理员",
+        subtitle: "直接向平台管理员反馈问题或需求。",
+        backLabel: "返回联系页面",
+      }
+    : {
+        title: "工单对话",
+        subtitle: "与客户保持顺畅沟通，追踪处理进度。",
+        backLabel: "返回工单中心",
+      },
+)
 
 const statusBadgeClass = computed(() => {
   switch (ticketDetail.value?.status) {
@@ -95,40 +150,97 @@ const statusLabel = computed(() => {
       return "--"
   }
 })
+
+const supportContact = computed(() => (props.context === "support" ? supportThread.value : null))
+
+const handleSendMessage = async () => {
+  const targetId = props.context === "support" ? supportThread.value.id : props.ticketId
+  const content = newMessage.value.trim()
+  if (!content || !targetId) return
+  sending.value = true
+  const payload: TicketMessage = {
+    id: `local-${Date.now()}`,
+    ticketId: targetId,
+    authorType: authorMeta.value.type,
+    authorName: authorMeta.value.name,
+    timestamp: new Date().toLocaleString("zh-CN", { hour12: false }),
+    content,
+  }
+  // TODO: 接入后端发送接口，替换本地 mock 追加逻辑
+  if (props.context === "support") {
+    supportMessages.value = [...supportMessages.value, payload]
+  } else {
+    allTicketMessages.value = [...allTicketMessages.value, payload]
+  }
+  newMessage.value = ""
+  scrollToBottom()
+  sending.value = false
+}
+
+const handleBackToList = () => {
+  if (typeof window !== "undefined") {
+    window.location.href = backPath.value
+  }
+}
 </script>
 
 <template>
-  <TicketWorkspace :role="props.role" :active-path="props.activePath">
+  <TicketWorkspace :role="resolvedRole" :active-path="props.activePath">
     <header class="surface-card conversation-header">
       <div>
-        <button class="link-button" type="button" @click="handleBackToList">返回工单中心</button>
-        <p class="conversation-title">工单对话</p>
-        <p class="conversation-subtitle">与客户保持顺畅沟通，追踪处理进度。</p>
+        <button class="link-button" type="button" @click="handleBackToList">{{ headerCopy.backLabel }}</button>
+        <p class="conversation-title">{{ headerCopy.title }}</p>
+        <p class="conversation-subtitle">{{ headerCopy.subtitle }}</p>
       </div>
-      <div class="conversation-meta" v-if="ticketDetail">
+      <div class="conversation-meta" v-if="props.context === 'ticket' && ticketDetail">
         <p class="conversation-ticket">{{ ticketDetail.ticketNo }}</p>
         <span :class="statusBadgeClass">{{ statusLabel }}</span>
+      </div>
+      <div class="conversation-meta conversation-meta--support" v-else-if="supportContact">
+        <p class="conversation-ticket">{{ supportContact.subject }}</p>
+        <span class="ticket-badge ticket-badge--progress">{{ supportContact.channel }}</span>
       </div>
     </header>
 
     <section class="surface-card conversation-board">
-      <div class="ticket-summary" v-if="ticketDetail">
-        <div>
-          <p class="summary-title">{{ ticketDetail.description }}</p>
-          <div class="summary-info">
-            <span>{{ ticketDetail.issueType }}</span>
-            <span>{{ ticketDetail.serviceType }}</span>
+      <template v-if="props.context === 'ticket'">
+        <div class="ticket-summary" v-if="ticketDetail">
+          <div>
+            <p class="summary-title">{{ ticketDetail.description }}</p>
+            <div class="summary-info">
+              <span>{{ ticketDetail.issueType }}</span>
+              <span>{{ ticketDetail.serviceType }}</span>
+            </div>
+          </div>
+          <div class="summary-meta">
+            <p>提单人：{{ ticketDetail.requester }}</p>
+            <p>创建时间：{{ ticketDetail.createdAt }}</p>
           </div>
         </div>
-        <div class="summary-meta">
-          <p>提单人：{{ ticketDetail.requester }}</p>
-          <p>创建时间：{{ ticketDetail.createdAt }}</p>
+        <div v-else class="ticket-summary ticket-summary--empty">
+          <p class="summary-title">未找到对应工单</p>
+          <p class="text-sm text-muted-foreground">请返回工单中心重新选择。</p>
         </div>
-      </div>
-      <div v-else class="ticket-summary ticket-summary--empty">
-        <p class="summary-title">未找到对应工单</p>
-        <p class="text-sm text-muted-foreground">请返回工单中心重新选择。</p>
-      </div>
+      </template>
+      <template v-else>
+        <div class="support-summary" v-if="supportContact">
+          <div>
+            <p class="summary-title">{{ supportContact.subject }}</p>
+            <p class="support-summary__channel">沟通渠道：{{ supportContact.channel }}</p>
+          </div>
+          <div class="support-contact">
+            <div>
+              <p class="support-contact__name">{{ supportContact.contact.name }}</p>
+              <p class="support-contact__role">{{ supportContact.contact.role }}</p>
+            </div>
+            <span class="support-contact__sla">SLA：{{ supportContact.contact.responseSla }}</span>
+          </div>
+        </div>
+        <div v-else class="support-summary support-summary--empty">
+          <p class="summary-title">暂未加载到管理员信息</p>
+          <p class="text-sm text-muted-foreground">请稍后重试或联系平台运维。</p>
+        </div>
+      </template>
 
       <div ref="chatContainer" class="chat-panel">
         <template v-if="currentMessages.length">
@@ -150,7 +262,7 @@ const statusLabel = computed(() => {
       </div>
 
       <div class="chat-input-area">
-        <textarea v-model="newMessage" class="chat-textarea" rows="3" placeholder="输入需要回复的内容..."></textarea>
+        <textarea v-model="newMessage" class="chat-textarea" rows="3" :placeholder="inputPlaceholder"></textarea>
         <button
           type="button"
           class="primary-btn chat-send"
@@ -204,6 +316,38 @@ const statusLabel = computed(() => {
 
 .ticket-badge--completed {
   @apply bg-emerald-100 text-emerald-700;
+}
+
+.conversation-meta--support {
+  @apply items-start text-left lg:items-end lg:text-right;
+}
+
+.support-summary {
+  @apply flex flex-col gap-3 rounded-3xl bg-slate-50/60 px-5 py-4 text-sm text-muted-foreground;
+}
+
+.support-summary__channel {
+  @apply text-xs text-muted-foreground;
+}
+
+.support-summary--empty {
+  @apply border border-dashed border-border/60 text-center;
+}
+
+.support-contact {
+  @apply flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground;
+}
+
+.support-contact__name {
+  @apply text-base font-semibold text-foreground;
+}
+
+.support-contact__role {
+  @apply text-xs text-muted-foreground;
+}
+
+.support-contact__sla {
+  @apply rounded-full bg-primary/5 px-3 py-1 text-xs font-medium text-primary;
 }
 
 .conversation-board {

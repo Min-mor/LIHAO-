@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import type { UserRole } from "@/components/dashboard/types"
 import AppSidebar from "@/components/dashboard/AppSidebar.vue"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { readAuthSession } from "@/lib/auth"
 import {
   settingsMock,
   type AuditLogEntry,
@@ -18,20 +19,29 @@ import {
   type ToggleSetting,
 } from "@/mock/data/settings"
 
+const DEFAULT_ROLE: UserRole = "admin"
+
 const props = withDefaults(defineProps<{ role?: UserRole; activePath?: string }>(), {
-  role: "admin",
   activePath: "/settings",
 })
 
-const dataset = computed<SettingsDataset>(() => settingsMock[props.role])
+const sessionRole = ref<UserRole>(DEFAULT_ROLE)
+
+onMounted(() => {
+  const session = readAuthSession()
+  if (session?.role) {
+    sessionRole.value = session.role
+  }
+})
+
+const resolvedRole = computed<UserRole>(() => props.role ?? sessionRole.value)
+
+const dataset = computed<SettingsDataset>(() => settingsMock[resolvedRole.value])
 const activeTab = ref(dataset.value.tabs[0]?.value ?? "platform")
 
-watch(
-  () => props.role,
-  (role) => {
-    activeTab.value = settingsMock[role].tabs[0]?.value ?? "platform"
-  },
-)
+watch(resolvedRole, (role) => {
+  activeTab.value = settingsMock[role].tabs[0]?.value ?? "platform"
+})
 
 function riskBadgeVariant(entry: AuditLogEntry) {
   const map: Record<AuditLogEntry["risk"], { label: string; class: string }> = {
@@ -61,7 +71,7 @@ function roleBadge(role: RolePolicy) {
 
 <template>
   <SidebarProvider class="settings-shell">
-    <AppSidebar :role="props.role" :active-path="props.activePath" />
+    <AppSidebar :role="resolvedRole" :active-path="props.activePath" />
     <SidebarInset class="settings-inset">
       <div class="settings-grid">
         <section class="surface-card hero-card">

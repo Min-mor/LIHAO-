@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import type { UserRole } from "@/components/dashboard/types"
 import {
   Pagination,
@@ -12,6 +12,9 @@ import {
 import type { TicketRecord, TicketStatus } from "@/mock/data/tickets"
 import { ticketCenterMock } from "@/mock/data/tickets"
 import TicketWorkspace from "@/components/tickets/TicketWorkspace.vue"
+import { readAuthSession } from "@/lib/auth"
+
+const DEFAULT_ROLE: UserRole = "admin"
 
 const props = withDefaults(
   defineProps<{
@@ -23,11 +26,21 @@ const props = withDefaults(
     onExport?: (tickets: TicketRecord[]) => void
   }>(),
   {
-    role: "admin",
     activePath: "/tickets",
     pageSize: 5,
   },
 )
+
+const sessionRole = ref<UserRole>(DEFAULT_ROLE)
+
+onMounted(() => {
+  const session = readAuthSession()
+  if (session?.role) {
+    sessionRole.value = session.role
+  }
+})
+
+const resolvedRole = computed<UserRole>(() => props.role ?? sessionRole.value)
 
 const ticketsSource = computed(() => props.ticketsData ?? ticketCenterMock.tickets)
 const tickets = ref<TicketRecord[]>([...ticketsSource.value])
@@ -96,7 +109,8 @@ const handleExport = () => {
 }
 
 const handleLeaveMessage = (ticketId: string) => {
-  window.location.href = `/tickets/${ticketId}`
+  const destination = resolvedRole.value === "merchant" ? `/tickets/chat/${ticketId}` : `/tickets/${ticketId}`
+  window.location.href = destination
 }
 
 watch([keyword, statusFilter], () => {
@@ -122,7 +136,7 @@ watch(
 </script>
 
 <template>
-  <TicketWorkspace :role="props.role" :active-path="props.activePath">
+  <TicketWorkspace :role="resolvedRole" :active-path="props.activePath">
     <header class="surface-card ticket-header">
       <div>
         <p class="ticket-title">工单中心</p>
