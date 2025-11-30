@@ -71,12 +71,14 @@ function parseJwtExpireSeconds(token: string) {
 }
 
 function mapUserInfoFromSms(user: SmsLoginResponseUser): IUserInfoRes {
+  const phone = user.tel || ''
   return {
     userId: user.id,
     nickname: user.nickname || user.username || `用户_${user.id}`,
     avatar: user.avatar || '',
     username: user.username,
-    tel: user.tel,
+    phone,
+    tel: phone,
     email: user.email,
     role: user.role,
     status: user.status,

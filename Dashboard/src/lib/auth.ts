@@ -5,6 +5,14 @@ export interface AuthSession {
   role: UserRole
   phone?: string
   isNew?: boolean
+  /**
+   * 用于展示的用户昵称/商家名称，来源于后端登录返回
+   */
+  displayName?: string
+  /**
+   * 头像链接，可选
+   */
+  avatar?: string | null
   timestamp?: number
 }
 

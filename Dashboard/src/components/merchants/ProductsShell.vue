@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import { BellRing, Filter, Pencil, Plus, Search, Trash2 } from "lucide-vue-next"
 import type { UserRole } from "@/components/dashboard/types"
 import AppSidebar from "@/components/dashboard/AppSidebar.vue"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { fetchProductList, updateProductStatus, type BackendProduct } from "@/config/api"
 import {
   merchantProductsMock,
   type MerchantProduct,
@@ -25,8 +26,13 @@ const props = withDefaults(defineProps<{ role?: UserRole; activePath?: string }>
   activePath: "/products",
 })
 
-const dataset = merchantProductsMock
-const products = ref(dataset.list.map(product => ({ ...product })))
+type MerchantProductEx = MerchantProduct & {
+  description?: string
+  hotelOrNo?: boolean
+  hotel?: string | null
+}
+
+const products = ref<MerchantProductEx[]>(merchantProductsMock.list.map(product => ({ ...product })))
 const ITEMS_PER_PAGE = 5
 const currentPage = ref(1)
 
@@ -34,6 +40,44 @@ const searchTerm = ref("")
 const statusFilter = ref<"all" | ProductStatus>("all")
 const categoryFilter = ref<"all" | string>("all")
 const showFilters = ref(false)
+
+function mapBackendStatusToProductStatus(status: boolean): ProductStatus {
+  return status ? "published" : "unpublished"
+}
+
+function buildInventoryFromStock(stock: number) {
+  const tone: "default" | "warning" = stock <= 5 ? "warning" : "default"
+  const label = tone === "warning" ? `仅剩 ${stock}` : `剩余 ${stock}`
+  return { total: stock, label, tone }
+}
+
+function mapBackendProductToMerchant(product: BackendProduct): MerchantProductEx {
+  return {
+    id: String(product.id),
+    name: product.name,
+    sku: `TRIP-${product.id}`,
+    cover: "",
+    category: product.destination,
+    price: product.price,
+    inventory: buildInventoryFromStock(product.stock),
+    status: mapBackendStatusToProductStatus(product.status),
+    updatedAt: "",
+    description: product.description,
+    hotelOrNo: product.hotelOrNo,
+    hotel: product.hotel,
+  }
+}
+
+onMounted(async () => {
+  try {
+    const pageData = await fetchProductList({ page: 1, limit: 50 })
+    const mapped = pageData.records.map(mapBackendProductToMerchant)
+    products.value = mapped
+  } catch (error) {
+    console.warn("加载商品列表失败，使用本地 mock 数据作为兜底", error)
+    products.value = merchantProductsMock.list.map(product => ({ ...product }))
+  }
+})
 
 const filteredProducts = computed(() =>
   products.value.filter(product => {
@@ -56,12 +100,33 @@ const filteredProducts = computed(() =>
 const totalProducts = computed(() => products.value.length)
 const publishedCount = computed(() => products.value.filter(product => product.status === "published").length)
 const draftCount = computed(() => products.value.filter(product => product.status === "unpublished").length)
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredProducts.value.length / ITEMS_PER_PAGE)))
+const visibleCount = computed(() => filteredProducts.value.length)
+const totalPages = computed(() => Math.max(1, Math.ceil(visibleCount.value / ITEMS_PER_PAGE)))
 
 const paginatedProducts = computed(() => {
   const start = (currentPage.value - 1) * ITEMS_PER_PAGE
   return filteredProducts.value.slice(start, start + ITEMS_PER_PAGE)
 })
+
+const shownCount = computed(() => {
+  const max = visibleCount.value
+  const currentMax = currentPage.value * ITEMS_PER_PAGE
+  return Math.min(currentMax, max)
+})
+
+const destinationOptions = computed(() => {
+  const set = new Set<string>()
+  products.value.forEach(product => {
+    if (product.category)
+      set.add(product.category)
+  })
+  return Array.from(set)
+})
+
+const statusOptions = computed(() => [
+  { value: "published" as ProductStatus, label: "已上架" },
+  { value: "unpublished" as ProductStatus, label: "已下架" },
+])
 
 watch(filteredProducts, () => {
   if (currentPage.value > totalPages.value) {
@@ -69,15 +134,26 @@ watch(filteredProducts, () => {
   }
 })
 
-function toggleStatus(product: MerchantProduct) {
-  product.status = product.status === "published" ? "unpublished" : "published"
-}
-
-function handleStatusChange(product: MerchantProduct, checked: boolean) {
+async function handleStatusChange(product: MerchantProductEx, checked: boolean) {
+  const previousStatus = product.status
   const nextStatus: ProductStatus = checked ? "published" : "unpublished"
-  const updatedProduct = { ...product, status: nextStatus }
 
-  products.value = products.value.map(item => (item.id === product.id ? updatedProduct : item))
+  products.value = products.value.map(item =>
+    item.id === product.id ? { ...item, status: nextStatus } : item,
+  )
+
+  const numericId = Number(product.id)
+  if (Number.isNaN(numericId))
+    return
+
+  try {
+    await updateProductStatus({ id: numericId, status: nextStatus === "published" })
+  } catch (error) {
+    console.warn("更新商品状态失败，回滚本地状态", error)
+    products.value = products.value.map(item =>
+      item.id === product.id ? { ...item, status: previousStatus } : item,
+    )
+  }
 }
 
 function deleteProduct(productId: string) {
@@ -141,10 +217,10 @@ function resetFilters() {
           <section v-if="showFilters" class="surface-card filter-panel">
             <div class="filter-grid">
               <label class="filter-field">
-                <span>产品分类</span>
+                <span>目的地</span>
                 <select v-model="categoryFilter" class="filter-select">
                   <option value="all">全部</option>
-                  <option v-for="category in dataset.filters.categories" :key="category" :value="category">
+                  <option v-for="category in destinationOptions" :key="category" :value="category">
                     {{ category }}
                   </option>
                 </select>
@@ -153,7 +229,7 @@ function resetFilters() {
                 <span>发布状态</span>
                 <select v-model="statusFilter" class="filter-select">
                   <option value="all">全部</option>
-                  <option v-for="status in dataset.filters.statuses" :key="status.value" :value="status.value">
+                  <option v-for="status in statusOptions" :key="status.value" :value="status.value">
                     {{ status.label }}
                   </option>
                 </select>
@@ -192,7 +268,7 @@ function resetFilters() {
                       <span>产品名称</span>
                     </div>
                   </TableHead>
-                  <TableHead class="text-left w-[140px]">分类</TableHead>
+                  <TableHead class="text-left w-[140px]">目的地</TableHead>
                   <TableHead class="text-left w-32">价格</TableHead>
                   <TableHead class="text-left w-32">库存</TableHead>
                   <TableHead class="text-left w-40">状态</TableHead>
@@ -205,7 +281,12 @@ function resetFilters() {
                     <div class="table-product">
                       <input type="checkbox" class="table-checkbox" />
                       <div class="product-info">
-                        <img :src="product.cover" :alt="product.name" />
+                        <div class="product-media">
+                          <img v-if="product.cover" :src="product.cover" :alt="product.name" />
+                          <div v-else class="product-avatar-fallback">
+                            {{ product.name?.[0] || "旅" }}
+                          </div>
+                        </div>
                         <div>
                           <p class="product-name">{{ product.name }}</p>
                           <p class="product-meta">编号：#{{ product.id }}</p>
@@ -248,12 +329,12 @@ function resetFilters() {
               </TableBody>
             </Table>
             <footer class="table-footer">
-              <p>显示 {{ filteredProducts.length }} / {{ totalProducts }} 个商品</p>
+              <p>显示 {{ shownCount }} / {{ visibleCount }} 个商品</p>
               <Pagination
                 v-model:page="currentPage"
                 class="pagination !mx-0 !w-auto"
                 :items-per-page="ITEMS_PER_PAGE"
-                :total="filteredProducts.length"
+                :total="visibleCount"
                 :sibling-count="1"
               >
                 <PaginationContent v-slot="{ items }">
@@ -423,8 +504,16 @@ function resetFilters() {
   @apply flex items-center gap-3;
 }
 
+.product-media {
+  @apply flex items-center justify-center;
+}
+
 .product-info img {
   @apply size-12 rounded-2xl object-cover;
+}
+
+.product-avatar-fallback {
+  @apply flex size-12 items-center justify-center rounded-2xl bg-muted text-base font-semibold text-muted-foreground;
 }
 
 .product-name {

@@ -27,8 +27,6 @@ const form = reactive({
 })
 
 const loginMode = ref<'sms' | 'password'>('sms')
-const useMockAuth = import.meta.env.VITE_API_MODE !== 'real'
-
 const { info: showInfo } = useToast()
 const tokenStore = useTokenStore()
 
@@ -141,11 +139,7 @@ async function handleSubmit() {
   }
 
   try {
-    if (useMockAuth) {
-      const password = isSmsMode.value ? undefined : form.password
-      await tokenStore.loginByPhoneMock(cleanedPhone.value, password)
-    }
-    else if (isSmsMode.value) {
+    if (isSmsMode.value) {
       await tokenStore.loginBySms(cleanedPhone.value, form.code)
     }
     else {
@@ -155,7 +149,7 @@ async function handleSubmit() {
       })
     }
 
-    showInfo({ msg: useMockAuth ? '登录成功（mock）' : '登录成功' })
+    showInfo({ msg: '登录成功' })
     resetCodeState()
     navigateAfterLogin()
   }

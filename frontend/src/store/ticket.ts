@@ -71,6 +71,13 @@ export const useTicketStore = defineStore('ticket', {
         this.loading = false
       }
     },
+    setSavedPassengersForCurrentUser(list: { id: string, name: string, type: 'adult' | 'child' | 'student', idNo?: string, idType?: string, phone?: string }[]) {
+      const userStore = useUserStore()
+      const userId = userStore.userInfo?.userId || -1
+      const others = this.savedPassengers.filter(x => x.userId !== userId)
+      const mapped = list.map(p => ({ ...p, userId }))
+      this.savedPassengers = [...others, ...mapped]
+    },
     chooseTrip(trip: Trip) {
       this.selectedTrip = trip
       this.selectedFareId = trip.fares[0]?.id || ''

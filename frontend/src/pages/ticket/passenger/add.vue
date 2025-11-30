@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import type { SavePassengerReq } from '@/api/modules/passenger/types'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { ref } from 'vue'
 import FloatingBack from '@/components/common/FloatingBack.vue'
 import LoginPrompt from '@/components/LoginPrompt.vue'
 import { useLoginGuard } from '@/hooks/useLoginGuard'
+import { createTravelerFromPassenger, fetchTravelerDetailAsPassenger, updateTravelerFromPassenger } from '@/service/traveler'
 import { useTicketStore } from '@/store/ticket'
 import { useLoginPromptStore } from '@/store/uiLoginPrompt'
 
@@ -37,7 +39,7 @@ function handleIdTypeConfirm(item: { label: string, value: string }) {
   idType.value = item.value
 }
 
-function confirm() {
+async function confirm() {
   // 姓名验证 - 只允许中文、英文、·
   const trimmedName = name.value?.trim() || ''
   if (!trimmedName) {
@@ -110,42 +112,36 @@ function confirm() {
     return
   }
 
-  // 保存乘客信息
-  if (isEditMode.value) {
-    // 编辑模式
-    store.addSavedPassenger({
-      id: editingId.value,
-      name: trimmedName,
-      type: type.value,
-      idNo: trimmedIdNo,
-      idType: idType.value,
-      phone: trimmedPhone,
-    })
-  }
-  else {
-    // 添加模式
-    store.addSavedPassenger({
-      name: trimmedName,
-      type: type.value,
-      idNo: trimmedIdNo,
-      idType: idType.value,
-      phone: trimmedPhone,
-    })
+  const payload: SavePassengerReq = {
+    id: isEditMode.value ? editingId.value : undefined,
+    name: trimmedName,
+    type: type.value,
+    idNo: trimmedIdNo,
+    idType: idType.value,
+    phone: trimmedPhone,
   }
 
-  // 先返回上一页，携带成功标记
-  uni.navigateBack({
-    success: () => {
-      // 返回后显示成功提示
-      setTimeout(() => {
-        uni.showToast({
-          title: isEditMode.value ? '修改成功！' : '添加成功！',
-          icon: 'success',
-          duration: 1500,
-        })
-      }, 100)
-    },
-  })
+  try {
+    if (isEditMode.value)
+      await updateTravelerFromPassenger(editingId.value, payload)
+    else
+      await createTravelerFromPassenger(payload)
+
+    uni.navigateBack({
+      success: () => {
+        setTimeout(() => {
+          uni.showToast({
+            title: isEditMode.value ? '修改成功！' : '添加成功！',
+            icon: 'success',
+            duration: 1500,
+          })
+        }, 100)
+      },
+    })
+  }
+  catch (error) {
+    uni.showToast({ title: '保存乘客失败，请稍后重试', icon: 'none', duration: 2000 })
+  }
 }
 
 onLoad((options: any) => {
@@ -163,15 +159,20 @@ onLoad((options: any) => {
     editingId.value = options.id
     isEditMode.value = true
 
-    // 加载乘客数据
-    const passenger = store.savedPassengersForCurrentUser.find(p => p.id === options.id)
-    if (passenger) {
-      name.value = passenger.name
-      type.value = passenger.type
-      idNo.value = passenger.idNo || ''
-      idType.value = passenger.idType || '二代身份证'
-      phone.value = passenger.phone || ''
-    }
+    fetchTravelerDetailAsPassenger(options.id)
+      .then((passenger) => {
+        name.value = passenger.name
+        type.value = passenger.type
+        idNo.value = passenger.idNo || ''
+        idType.value = passenger.idType || '二代身份证'
+        phone.value = passenger.phone || ''
+      })
+      .catch(() => {
+        uni.showToast({ title: '加载乘客信息失败', icon: 'none', duration: 2000 })
+        setTimeout(() => {
+          uni.navigateBack()
+        }, 500)
+      })
   }
 })
 

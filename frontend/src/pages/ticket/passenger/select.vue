@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import FloatingBack from '@/components/common/FloatingBack.vue'
 import LoginPrompt from '@/components/LoginPrompt.vue'
 import { useLoginGuard } from '@/hooks/useLoginGuard'
+import { deleteTravelerById, fetchTravelersForCurrentUser } from '@/service/traveler'
 import { useTicketStore } from '@/store/ticket'
 import { useLoginPromptStore } from '@/store/uiLoginPrompt'
 import { useUserStore } from '@/store/user'
@@ -21,6 +22,7 @@ const saved = computed(() => store.savedPassengersForCurrentUser)
 const checked = ref<string[]>([])
 const showActionSheet = ref(false)
 const currentPassenger = ref<any>(null)
+const loading = ref(false)
 
 const maskedPhone = computed(() => {
   const phone = (userStore.userInfo as any)?.phone || ''
@@ -28,6 +30,22 @@ const maskedPhone = computed(() => {
     return '未绑定手机号'
   return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
 })
+
+async function refreshTravelers() {
+  if (!isLoggedIn.value)
+    return
+  try {
+    loading.value = true
+    const list = await fetchTravelersForCurrentUser()
+    store.setSavedPassengersForCurrentUser(list)
+  }
+  catch (error) {
+    uni.showToast({ title: '加载乘客失败', icon: 'none' })
+  }
+  finally {
+    loading.value = false
+  }
+}
 
 function toggle(id: string) {
   const set = new Set(checked.value)
@@ -104,9 +122,16 @@ function handleAction(detail: any) {
       title: '删除乘客',
       content: `确定要删除 ${passengerToDelete.name} 吗？`,
       confirmColor: '#325947',
-      success: (res) => {
+      success: async (res) => {
         if (res.confirm) {
-          store.removeSavedPassenger(passengerToDelete.id)
+          try {
+            await deleteTravelerById(passengerToDelete.id)
+            store.removeSavedPassenger(passengerToDelete.id)
+          }
+          catch (error) {
+            uni.showToast({ title: '删除失败，请稍后重试', icon: 'none' })
+            return
+          }
           // 如果该乘客在选中列表中，也要移除
           const index = checked.value.indexOf(passengerToDelete.id)
           if (index > -1) {
@@ -134,17 +159,24 @@ function handleAction(detail: any) {
 
 onLoad(() => {
   if (!isLoggedIn.value) {
-    ensureLogin(() => {}, {
+    ensureLogin(() => {
+      refreshTravelers()
+    }, {
       message: '查看和管理乘客信息需要登录',
       onCancel: () => {
         uni.navigateBack()
       },
     })
   }
+  else {
+    refreshTravelers()
+  }
 })
 
 onShow(() => {
   loginPrompt.close()
+  if (isLoggedIn.value)
+    refreshTravelers()
 })
 </script>
 

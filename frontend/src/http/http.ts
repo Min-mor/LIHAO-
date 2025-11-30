@@ -21,8 +21,10 @@ export function http<T>(options: CustomRequestOptions) {
       // #endif
       // 响应成功
       success: async (res) => {
-        const responseData = res.data as IResponse<T>
-        const { code } = responseData
+        const responseData = res.data as any
+        const code: number | undefined = typeof responseData === 'object' && responseData !== null
+          ? responseData.code
+          : undefined
 
         // 检查是否是401错误（包括HTTP状态码401或业务码401）
         const isTokenExpired = res.statusCode === 401 || code === 401
@@ -94,11 +96,18 @@ export function http<T>(options: CustomRequestOptions) {
 
         // 处理其他成功状态（HTTP状态码200-299）
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          // 处理业务逻辑错误
-          if (code !== ResultEnum.Success0 && code !== ResultEnum.Success200) {
-            throw new Error(`请求错误[${code}]：${responseData.message || responseData.msg}`)
+          // 后端有业务 code 字段时，按业务码判断成功/失败
+          if (typeof code === 'number') {
+            if (code !== ResultEnum.Success0 && code !== ResultEnum.Success200) {
+              throw new Error(`请求错误[${code}]：${responseData.message || responseData.msg}`)
+            }
+            // 如果有 data 字段，则返回 data；否则直接返回整个响应体
+            if (Object.prototype.hasOwnProperty.call(responseData, 'data'))
+              return resolve(responseData.data as T)
+            return resolve(responseData as T)
           }
-          return resolve(responseData.data as T)
+          // 没有 code 字段时，认为整个响应体就是数据本身
+          return resolve(responseData as T)
         }
 
         // 处理其他错误

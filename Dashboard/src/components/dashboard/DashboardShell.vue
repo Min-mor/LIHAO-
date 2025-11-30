@@ -12,6 +12,7 @@ import { ChartTooltipContent, componentToString, type ChartConfig } from "@/comp
 import type { ReportRange } from "@/mock/data/sales"
 import { chartDatasets } from "@/mock/data/sales"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { readAuthSession } from "@/lib/auth"
 
 const props = withDefaults(defineProps<{ role?: UserRole }>(), {
   role: "merchant",
@@ -22,6 +23,21 @@ const emit = defineEmits<{ (e: "logout"): void }>()
 const activePath = ref("/")
 
 const dataset = computed(() => dashboardMock[props.role])
+const profile = ref(dataset.value.profile)
+
+if (typeof window !== "undefined") {
+	const session = readAuthSession()
+	if (session) {
+		const base = dataset.value.profile
+		const displayRole = session.role === "admin" ? "平台管理员" : "商家用户"
+		profile.value = {
+			userId: base.userId || (session.phone ?? ""),
+			username: session.displayName || base.username,
+			role: displayRole,
+			avatar: session.avatar ?? base.avatar,
+		}
+	}
+}
 const isAdmin = computed(() => props.role === "admin")
 
 const reminderToneMap: Record<ReminderItem["tone"], ReminderToneMeta> = {
@@ -301,7 +317,7 @@ const adminUserTooltip = componentToString(adminUserChartConfig, ChartTooltipCon
 
         <aside class="profile-panel-wrapper">
           <ProfilePanel
-            :profile="dataset.profile"
+            :profile="profile"
             :reminders="dataset.reminders"
             :reminder-tone-map="reminderToneMap"
           />

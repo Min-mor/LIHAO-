@@ -14,6 +14,10 @@ interface AuthResult {
   token: string
   role: UserRole
   isNew?: boolean
+  /** 展示名称（昵称/商家名），来源于后端登录返回 */
+  displayName?: string
+  /** 头像链接，可选 */
+  avatar?: string | null
 }
 
 const props = withDefaults(
@@ -92,6 +96,8 @@ function handleAuthSuccess(result: AuthResult) {
     role: result.role,
     phone: form.phone,
     isNew: result.isNew,
+    displayName: result.displayName,
+    avatar: result.avatar,
   }
   writeAuthSession(sessionPayload)
   emit("login-success", sessionPayload)
