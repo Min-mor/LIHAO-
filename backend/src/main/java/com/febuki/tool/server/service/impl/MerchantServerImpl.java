@@ -71,19 +71,23 @@ public class MerchantServerImpl extends ServiceImpl<MerchantMapper, Merchant> im
 
     @Override
     public IPage<MerchantDTO> listMerchants(int page, int limit, String name) {
+        QueryWrapper<Merchant> queryWrapper = new QueryWrapper<>();
+
+        if (StringUtils.hasText(name)) {
+            queryWrapper.like("company_name", name);
+        }
+
         return baseMapper.selectPage(
                 new Page<>(page, limit),
-                new QueryWrapper<>()
+                queryWrapper
         ).convert(
-                order -> new MerchantDTO(
-                        order.getId(),
-                        order.getCompanyName(),
-                        order.getBusinessLicenseURL(),
-                        order.getVerificationStatus(),
-                        order.getApprovedBy()
+                merchant -> new MerchantDTO(
+                        merchant.getId(),
+                        merchant.getCompanyName(),
+                        merchant.getBusinessLicenseURL(),
+                        merchant.getVerificationStatus(),
+                        merchant.getApprovedBy()
                 )
-        ).setTotal(
-                baseMapper.selectCount(null)
         );
     }
 

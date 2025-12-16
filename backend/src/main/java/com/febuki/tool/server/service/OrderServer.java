@@ -9,7 +9,7 @@ public interface OrderServer {
     Order createOrder(OrderDTO orderDTO);
 
     // 分页获取订单
-    IPage<OrderDTO> listOrders(int page, int limit);
+    IPage<OrderDTO> listOrders(int page, int limit, Long userId);
 
     // 获取订单详情
     Order getOrderById(Long id);

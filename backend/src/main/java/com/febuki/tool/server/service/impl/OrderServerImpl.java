@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.febuki.tool.server.dto.OrderDTO;
 import com.febuki.tool.server.dto.enums.OrderStatus;
 import com.febuki.tool.server.dto.enums.PaymentStatus;
+import com.febuki.tool.server.dto.enums.UserRole;
 import com.febuki.tool.server.entity.Order;
 import com.febuki.tool.server.entity.OrderItem;
 import com.febuki.tool.server.entity.Product;
@@ -89,24 +90,28 @@ public class OrderServerImpl extends ServiceImpl<OrderMapper, Order> implements 
     }
 
     @Override
-    public IPage<OrderDTO> listOrders(int page, int limit) {
-        return baseMapper.selectPage(
-                new Page<>(page, limit),
-                new QueryWrapper<>()
-        ).convert(
-                order -> new OrderDTO(
-                        order.getId(),
-                        order.getOrderSN(),
-                        order.getUserId(),
-                        order.getProductId(),
-                        order.getTotalAmount(),
-                        order.getPaymentStatus(),
-                        order.getOrderStatus(),
-                        order.getCreatedAt()
-                )
-        ).setTotal(
-                baseMapper.selectCount(null)
-        );
+    public IPage<OrderDTO> listOrders(int page, int limit, Long userId) {
+        // 1. 查找当前操作用户
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("USER_NOT_FOUND");
+        }
+
+        QueryWrapper<Order> queryWrapper = new QueryWrapper<>();
+        // 默认按创建时间倒序
+        queryWrapper.orderByDesc("o.created_at");
+        // 2. 核心逻辑：根据角色区分查看视角
+        if (UserRole.MERCHANT.getRoleName().equals(user.getRole())) {
+            // 'p' 是 Mapper 中 products 表的别名
+            queryWrapper.eq("p.user_id", userId);
+        } else if (UserRole.CUSTOMER.getRoleName().equals(user.getRole())) {
+            // 'o' 是 Mapper 中 orders 表的别名
+            queryWrapper.eq("o.user_id", userId);
+        }
+        // 如果是管理员，则不加 where 条件，查看所有
+
+        // 3. 执行自定义连表查询
+        return baseMapper.selectOrderPage(new Page<>(page, limit), queryWrapper);
     }
 
     @Override

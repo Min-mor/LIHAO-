@@ -40,8 +40,6 @@ public class OrderItemServerImpl extends ServiceImpl<OrderItemMapper, OrderItem>
                         orderItem.getUnitPrice(),
                         orderItem.getQuantity()
                 )
-        ).setTotal(
-                baseMapper.selectCount(null)
         );
     }
 }

@@ -1,6 +1,7 @@
 // 测试用的 iconfont，可生效
 // @import './iconfont.css';
 
+/* #ifdef H5 */
 @font-face {
   font-family: 'Noto Serif SC';
   font-style: normal;
@@ -8,6 +9,7 @@
   font-display: swap;
   src: url('../../static/fonts/NotoSerifSC-Regular.ttf') format('truetype');
 }
+/* #endif */
 
 .font-serif {
   font-family: 'Noto Serif SC', 'Noto Serif', 'Source Han Serif SC', 'Songti SC', serif;

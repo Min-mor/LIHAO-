@@ -1,13 +1,11 @@
 package com.febuki.tool.server.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
+@Data
 @Schema(description = "文章收藏")
 public class ArticleCollectionDTO {
     @Schema(description = "收藏ID")

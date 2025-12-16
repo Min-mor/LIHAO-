@@ -27,10 +27,18 @@ public class TravelerController {
         switch (errorCode) {
             case "USER_NOT_FOUND":
                 return "操作失败：关联的用户不存在";
+            case "USER_ROLE_NOT_CUSTOMER":
+                return "操作失败：只有普通用户(Customer)才能添加旅客信息";
+            case "USER_ALREADY_HAS_TRAVELER":
+                return "添加失败：该用户已存在旅客信息，不可重复添加";
             case "TRAVELER_ID_NULL":
                 return "操作失败：旅客ID不能为空";
             case "TRAVELER_NOT_FOUND":
                 return "操作失败：该旅客信息不存在";
+            case "ID_CARD_EXISTS":
+                return "添加失败：该证件号已被使用";
+            case "PHONE_EXISTS":
+                return "添加失败：该手机号已被使用";
             default:
                 return "操作失败: " + errorCode;
         }
@@ -44,28 +52,9 @@ public class TravelerController {
             return ResponseEntity.status(HttpStatus.OK).body(
                     MapUtils.of(
                             MapUtils.Pair.of("code", HttpStatus.OK.value()),
-                            MapUtils.Pair.of("message", "添加成功")
-                    )
-            );
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                    MapUtils.of(
-                            MapUtils.Pair.of("code", HttpStatus.BAD_REQUEST.value()),
-                            MapUtils.Pair.of("message", convertErrorMessage(e.getMessage()))
-                    )
-            );
-        }
-    }
+                            MapUtils.Pair.of("message", "添加成功"),
+                            MapUtils.Pair.of("data", travelerDTO)
 
-    @PutMapping("/update")
-    @Operation(summary = "更新游客", description = "更新游客信息")
-    public ResponseEntity<?> updateTraveler(@Validated @RequestBody TravelerDTO travelerDTO) {
-        try {
-            travelerServer.updateTraveler(travelerDTO);
-            return ResponseEntity.status(HttpStatus.OK).body(
-                    MapUtils.of(
-                            MapUtils.Pair.of("code", HttpStatus.OK.value()),
-                            MapUtils.Pair.of("message", "更新成功")
                     )
             );
         } catch (RuntimeException e) {

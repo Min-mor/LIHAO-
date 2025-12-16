@@ -8,9 +8,6 @@ public interface TravelerServer {
     // 添加游客
     void saveTraveler(TravelerDTO travelerDTO);
 
-    // 更新游客
-    void updateTraveler(TravelerDTO travelerDTO);
-
     // 删除游客
     void deleteTraveler(Long id);
 

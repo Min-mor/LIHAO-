@@ -28,8 +28,6 @@ public class OrderItemDTO {
     @Schema(description = "数量", example = "1")
     private Long quantity;
 
-    public OrderItemDTO() {}
-
     public OrderItemDTO(Long id, Long orderId, Long productId, String productTitle, BigDecimal unitPrice, Long quantity) {
         Id = id;
         this.orderId = orderId;

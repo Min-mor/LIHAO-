@@ -19,13 +19,13 @@ public class User {
     @TableField("user_name")
     private String username;
 
-    private String nickname = "";
+    private String nickname;
     private String password;
     private String tel;
-    private String email = "";
-    private String role = "customer";
+    private String email;
+    private String role;
 
     @TableField("avatar_url")
     private String avatar = "https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif";;
-    private boolean status = true;
+    private boolean status;
 }

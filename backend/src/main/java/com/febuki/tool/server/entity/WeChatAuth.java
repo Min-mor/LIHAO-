@@ -18,6 +18,9 @@ public class WeChatAuth {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    @TableField("user_id")
+    private Long userId;
+
     @TableField("open_id")
     private String openId;
 

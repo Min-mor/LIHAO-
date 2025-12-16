@@ -8,6 +8,8 @@ import lombok.Setter;
 @Setter
 @Schema(description = "微信登录信息")
 public class WeChatAuthDTO {
+    @Schema(description = "用户id")
+    private Long userId;
     @Schema(description = "微信openid")
     private String openId;
     @Schema(description = "微信头像")
@@ -18,6 +20,13 @@ public class WeChatAuthDTO {
     public WeChatAuthDTO() {}
 
     public WeChatAuthDTO(String openId, String avatarUrl, String nickName) {
+        this.openId = openId;
+        this.avatarUrl = avatarUrl;
+        this.nickName = nickName;
+    }
+
+    public WeChatAuthDTO(Long userId, String openId, String avatarUrl, String nickName) {
+        this.userId = userId;
         this.openId = openId;
         this.avatarUrl = avatarUrl;
         this.nickName = nickName;

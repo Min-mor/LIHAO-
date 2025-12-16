@@ -79,13 +79,15 @@ public class OrderController {
     @Operation(summary = "订单列表", description = "分页获取订单列表")
     public ResponseEntity<?> list(
             @RequestParam(required = false, defaultValue = "1") int page,
-            @RequestParam(required = false, defaultValue = "10") int limit
+            @RequestParam(required = false, defaultValue = "10") int limit,
+            @RequestParam(required = false, defaultValue = "3") Long userId
+
     ) {
         return ResponseEntity.status(HttpStatus.OK).body(
                 MapUtils.of(
                         MapUtils.Pair.of("code", HttpStatus.OK.value()),
                         MapUtils.Pair.of("message", "获取成功"),
-                        MapUtils.Pair.of("data", orderServer.listOrders(page, limit))
+                        MapUtils.Pair.of("data", orderServer.listOrders(page, limit, userId))
                 )
         );
     }

@@ -129,13 +129,24 @@ function handleCalendarConfirm({ value }: { value: number }) {
       <view v-if="store.loading" class="loading">
         加载中...
       </view>
-      <component
-        :is="store.search.mode === 'train' ? TrainTripCard : FlightTripCard"
-        v-for="item in store.results"
-        :key="item.id"
-        :trip="item"
-        @select="handleSelectTrip"
-      />
+      <template v-else>
+        <template v-if="store.search.mode === 'train'">
+          <train-trip-card
+            v-for="item in store.results"
+            :key="item.id"
+            :trip="item"
+            @select="handleSelectTrip"
+          />
+        </template>
+        <template v-else>
+          <flight-trip-card
+            v-for="item in store.results"
+            :key="item.id"
+            :trip="item"
+            @select="handleSelectTrip"
+          />
+        </template>
+      </template>
     </view>
 
     <view class="bottom-bar">

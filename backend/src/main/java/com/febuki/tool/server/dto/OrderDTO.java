@@ -27,6 +27,15 @@ public class OrderDTO {
     @Schema(description = "商品id", example = "1")
     private Long productId;
 
+    @Schema(description = "商品名称")
+    private String productName;
+
+    @Schema(description = "商家名称")
+    private String merchantName;
+
+    @Schema(description = "买家昵称")
+    private String customerName;
+
     @Schema(description = "购买数量", example = "1")
     private Integer quantity;
 

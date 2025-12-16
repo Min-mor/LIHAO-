@@ -23,7 +23,8 @@ public class MerchantDTO {
     @Schema(description = "审核人", example = "1")
     private Long approvedBy;
 
-    public MerchantDTO() {}
+    public MerchantDTO() {
+    }
 
     public MerchantDTO(Long id, String companyName, String businessLicenseURL, short verificationStatus, Long approvedBy) {
         this.id = id;

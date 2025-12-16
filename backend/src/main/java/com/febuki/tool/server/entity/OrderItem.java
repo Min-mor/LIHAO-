@@ -30,5 +30,6 @@ public class OrderItem {
     @TableField("unit_price")
     private BigDecimal unitPrice;
 
+    @TableField("quantity")
     private Long quantity;
 }

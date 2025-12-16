@@ -23,7 +23,7 @@ public class Traveler {
     private String fullName;
 
     @TableField("phone")
-    private Long phone;
+    private String phone;
 
     @TableField("id_card_type")
     private short idCardType;

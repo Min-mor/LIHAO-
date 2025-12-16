@@ -44,12 +44,26 @@ const posts = ref<CommunityPost[]>([])
 const activeTab = ref<CommunityTab>('recommend')
 
 function getTimeValue(t: string) {
-  // 简易解析：支持 HH:mm 或 YYYY-MM-DD/时间字符串
+  // 简易解析：支持 HH:mm 或完整日期时间字符串
+  // 1) 仅时间：HH:mm，用于同一天内的排序
   if (/^\d{1,2}:\d{2}$/.test(t)) {
     const [h, m] = t.split(':').map(Number)
     return h * 60 + m
   }
-  const d = new Date(t)
+
+  let d: Date
+
+  // 2) 兼容 iOS：将 'YYYY-MM-DD HH:mm' / 'YYYY-MM-DD HH:mm:ss' 转为 'YYYY-MM-DDTHH:mm:ss'
+  if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(?::\d{2})?$/.test(t)) {
+    const normalized = t.replace(' ', 'T')
+    const withSeconds = /:\d{2}$/.test(normalized) ? normalized : `${normalized}:00`
+    d = new Date(withSeconds)
+  }
+  else {
+    // 其它格式交给内置解析（如 ISO 字符串等）
+    d = new Date(t)
+  }
+
   return Number.isNaN(d.getTime()) ? 0 : d.getTime()
 }
 

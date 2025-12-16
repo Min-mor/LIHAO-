@@ -8,22 +8,29 @@ import java.util.List;
 import java.util.Map;
 
 public interface UserServer {
-    // 获取所有用户
-    List<UserDTO> getAllUsers();
-    //
-    IPage<UserDTO> listPageUser(int page, int limit);
-    // 根据ID获取单个用户
+    // 分页获取用户
+    IPage<UserDTO> getAllUsers(int page, int limit);
+
+    // 根据ID获取用户实体
     User getUserById(Long id);
-    // 创建用户
-    void saveUser(User user);
-    // 注册用户
-    void registerUser(UserDTO userDTO);
-    // 检查用户名是否存在
+
+    // 检查字段唯一性
     boolean existsByUsername(String username);
-    // 检查邮箱是否存在
-    boolean existsByTel(String email);
-    //手机登录
+    boolean existsByTel(String tel);
+    boolean existsByEmail(String email);
+
+    // 修改密码
+    void updatePassword(Long userId, String oldPassword, String newPassword);
+
+    // 更改用户状态 (封禁/解封)
+    void updateUserStatus(Long userId, boolean status);
+
+    // 手机号登录
     Map<String, Object> loginByTel(String tel, String password);
-    // 根据手机号查询用户
-    User findByPhone(String tel);
+
+    // 根据手机寻找用户
+    User findByPhone(String phone);
+
+    // 保存用户
+    void saveUser(User user);
 }

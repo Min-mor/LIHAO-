@@ -30,9 +30,19 @@ public class ProductServerImpl extends ServiceImpl<ProductMapper, Product> imple
 
     @Override
     public IPage<ProductDTO> listProducts(int page, int limit, String keyword) {
+        QueryWrapper<Product> queryWrapper = new QueryWrapper<>();
+
+        if (StringUtils.hasText(keyword)) {
+            queryWrapper.and(wrapper ->
+                    wrapper.like("product_name", keyword)
+                            .or()
+                            .like("destination_name", keyword)
+            );
+        }
+
         return baseMapper.selectPage(
                 new Page<>(page, limit),
-                new QueryWrapper<>()
+                queryWrapper
         ).convert(
                 product -> new ProductDTO(
                         product.getId(),
@@ -46,8 +56,6 @@ public class ProductServerImpl extends ServiceImpl<ProductMapper, Product> imple
                         product.isHotelOrNo(),
                         product.getHotel()
                 )
-        ).setTotal(
-                baseMapper.selectCount(null)
         );
     }
 

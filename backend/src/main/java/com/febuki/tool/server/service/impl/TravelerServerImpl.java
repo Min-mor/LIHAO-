@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.febuki.tool.server.dto.TravelerDTO;
+import com.febuki.tool.server.dto.enums.UserRole;
 import com.febuki.tool.server.entity.Traveler;
 import com.febuki.tool.server.entity.User;
 import com.febuki.tool.server.mapper.TraverlerMapper;
@@ -23,35 +24,40 @@ public class TravelerServerImpl extends ServiceImpl<TraverlerMapper, Traveler> i
 
     @Override
     public void saveTraveler(TravelerDTO travelerDTO) {
-        // 1. 校验关联用户是否存在
+        // 1. 检查旅客表中 user_id 是否重复
+        Long userCount = Long.valueOf(baseMapper.selectCount(new QueryWrapper<Traveler>()
+                .eq("user_id", travelerDTO.getUserId())));
+        if (userCount > 0) {
+            throw new RuntimeException("USER_ALREADY_HAS_TRAVELER");
+        }
+
+        // 2. 检查 users 表中的 role 是否为 customer
         User user = userMapper.selectById(travelerDTO.getUserId());
         if (user == null) {
             throw new RuntimeException("USER_NOT_FOUND");
         }
+        if (!UserRole.CUSTOMER.getRoleName().equals(user.getRole())) {
+            throw new RuntimeException("USER_ROLE_NOT_CUSTOMER");
+        }
 
-        // 2. 转换实体并保存
+        // 3. 检查旅客表中 id_card_number 是否重复
+        Long idCardCount = Long.valueOf(baseMapper.selectCount(new QueryWrapper<Traveler>()
+                .eq("id_card_number", travelerDTO.getIdCardNumber())));
+        if (idCardCount > 0) {
+            throw new RuntimeException("ID_CARD_EXISTS");
+        }
+
+        // 4. 检查旅客表中 phone 是否重复
+        Long phoneCount = Long.valueOf(baseMapper.selectCount(new QueryWrapper<Traveler>()
+                .eq("phone", travelerDTO.getPhone())));
+        if (phoneCount > 0) {
+            throw new RuntimeException("PHONE_EXISTS");
+        }
+
+        // 5. 转换实体并保存
         Traveler traveler = new Traveler();
         BeanUtils.copyProperties(travelerDTO, traveler);
         baseMapper.insert(traveler);
-    }
-
-    @Override
-    public void updateTraveler(TravelerDTO travelerDTO) {
-        // 1. 基础校验
-        if (travelerDTO.getId() == null) {
-            throw new RuntimeException("TRAVELER_ID_NULL");
-        }
-
-        // 2. 检查是否存在
-        Traveler existingTraveler = baseMapper.selectById(travelerDTO.getId());
-        if (existingTraveler == null) {
-            throw new RuntimeException("TRAVELER_NOT_FOUND");
-        }
-
-        // 3. 转换实体并更新
-        Traveler traveler = new Traveler();
-        BeanUtils.copyProperties(travelerDTO, traveler);
-        baseMapper.updateById(traveler);
     }
 
     @Override
@@ -69,9 +75,16 @@ public class TravelerServerImpl extends ServiceImpl<TraverlerMapper, Traveler> i
 
     @Override
     public IPage<TravelerDTO> listTravelers(int page, int limit, Long userId) {
+        // 1. 构建查询条件
+        QueryWrapper<Traveler> queryWrapper = new QueryWrapper<>();
+        if (userId != null) {
+            queryWrapper.eq("user_id", userId);
+        }
+
+        // 2. 执行分页查询 (selectPage 会自动处理 count 查询)
         return baseMapper.selectPage(
                 new Page<>(page, limit),
-                new QueryWrapper<>()
+                queryWrapper
         ).convert(
                 traveler -> new TravelerDTO(
                         traveler.getId(),
@@ -82,8 +95,6 @@ public class TravelerServerImpl extends ServiceImpl<TraverlerMapper, Traveler> i
                         traveler.getIdCardNumber(),
                         traveler.getTravelerType()
                 )
-        ).setTotal(
-                baseMapper.selectCount(null)
         );
     }
 }

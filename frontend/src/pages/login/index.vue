@@ -102,9 +102,12 @@ function handleClose() {
 
 async function initPlatform() {
   const info = uni.getSystemInfoSync()
-  safeAreaTop.value = `${(info.safeAreaInsets?.top || 0) + 24}px`
+  const insetTop = info.safeAreaInsets?.top || 0
   isMiniProgram.value = isMpWeixin
   isAppPlatform.value = info.uniPlatform === 'app-plus'
+
+  // 小程序端使用自定义导航，背景可以延伸到状态栏区域，这里不再额外增加 paddingTop，避免页面高度超过一屏
+  safeAreaTop.value = isMpWeixin ? '0px' : `${insetTop + 24}px`
 }
 
 onLoad(() => {
@@ -210,27 +213,27 @@ onLoad(() => {
 
 .login__close {
   position: absolute;
-  top: 24rpx;
-  right: 24rpx;
+  // top: calc(env(safe-area-inset-top) + 24rpx);
+  left: 24rpx;
   padding: 12rpx;
   color: rgba(255, 255, 255, 0.85);
 }
 
 .login__content {
   position: relative;
-  min-height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 120rpx 48rpx 72rpx;
+  padding: 80rpx 40rpx calc(56rpx + env(safe-area-inset-bottom));
   overflow: hidden;
   box-sizing: border-box;
 }
 
 .login__title-block {
   text-align: center;
-  margin-top: 80rpx;
+  margin-top: 48rpx;
 }
 
 .login__hero-title {
