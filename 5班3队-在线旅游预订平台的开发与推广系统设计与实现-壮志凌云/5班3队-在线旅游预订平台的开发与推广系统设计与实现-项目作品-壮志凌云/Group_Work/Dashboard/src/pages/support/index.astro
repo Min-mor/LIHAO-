@@ -1,0 +1,8 @@
+---
+import Layout from "../../layouts/Layout.astro"
+import TicketConversationShell from "@/components/tickets/TicketConversationShell.vue"
+---
+
+<Layout title="联系管理员 - Trip 控制台">
+  <TicketConversationShell client:load context="support" activePath="/support" />
+</Layout>

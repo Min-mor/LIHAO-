@@ -1,0 +1,16 @@
+# 依赖与构建产物
+node_modules/
+dist/
+target/
+unpackage/
+.astro/
+.idea/
+.vscode/
+
+# 压缩包（内含旧版本代码，未上传）
+*.rar
+
+# 系统文件与日志
+.DS_Store
+Thumbs.db
+*.log

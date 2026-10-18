@@ -1,0 +1,11 @@
+---
+import Layout from "../layouts/Layout.astro"
+import AnnouncementCenterShell from "@/components/announcements/AnnouncementCenterShell.vue"
+import type { UserRole } from "@/components/dashboard/types"
+
+const role: UserRole = "admin"
+---
+
+<Layout title="公告中心 - Trip 控制台">
+  <AnnouncementCenterShell client:load role={role} activePath="/announcements" />
+</Layout>

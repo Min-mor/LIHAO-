@@ -1,0 +1,128 @@
+// 测试用的 iconfont，可生效
+// @import './iconfont.css';
+
+/* #ifdef H5 */
+@font-face {
+  font-family: 'Noto Serif SC';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../../static/fonts/NotoSerifSC-Regular.ttf') format('truetype');
+}
+/* #endif */
+
+.font-serif {
+  font-family: 'Noto Serif SC', 'Noto Serif', 'Source Han Serif SC', 'Songti SC', serif;
+}
+
+.test {
+  // 可以通过 @apply 多个样式封装整体样式
+  @apply mt-4 ml-4;
+
+  padding-top: 4px;
+  color: red;
+}
+
+$color-base-bg: #fcfbfa;
+$color-base-text: #161823;
+$color-base-dark: #2b2b2b;
+$color-base-border: #332f2c;
+$color-base-highlight: #fbede0;
+$color-base-brand: #325947;
+$color-base-accent: #a0d4c4;
+
+$color-bg-primary: $color-base-bg;
+$color-text-primary: $color-base-text;
+$color-text-secondary: rgba($color-base-text, 0.6);
+$color-text-tertiary: rgba($color-base-text, 0.8);
+$color-text-muted: rgba($color-base-text, 0.65);
+$color-text-dark: $color-base-dark;
+$color-text-inverse: $color-base-bg;
+$color-border-strong: $color-base-border;
+$color-border-light: rgba($color-base-border, 0.12);
+$color-highlight-bg: $color-base-highlight;
+$color-surface: $color-base-bg;
+$color-brand-primary: $color-base-brand;
+$color-brand-muted: rgba($color-base-brand, 0.35);
+$color-brand-soft: rgba($color-base-brand, 0.05);
+$color-brand-soft-strong: rgba($color-base-brand, 0.12);
+$color-brand-accent: $color-base-accent;
+$color-brand-primary-opaque: rgba($color-base-brand, 0.9);
+$color-brand-accent-opaque: rgba($color-base-accent, 0.9);
+$color-overlay-light: rgba($color-base-text, 0.06);
+$color-shadow-soft: rgba($color-base-text, 0.08);
+$color-shadow-strong: rgba($color-base-text, 0.12);
+$color-shadow-card: rgba($color-base-text, 0.1);
+$color-calendar-selected: $color-base-accent;
+$color-profile-surface: mix($color-base-bg, $color-base-highlight, 68%);
+$color-profile-background: mix($color-base-bg, $color-base-highlight, 84%);
+
+:root,
+page {
+  --color-bg-primary: #{$color-bg-primary};
+  --color-bg-primary-rgb: #{red($color-bg-primary)}, #{green($color-bg-primary)}, #{blue($color-bg-primary)};
+  --color-text-primary: #{$color-text-primary};
+  --color-text-primary-rgb: #{red($color-text-primary)}, #{green($color-text-primary)}, #{blue($color-text-primary)};
+  --color-text-secondary: #{$color-text-secondary};
+  --color-text-secondary-rgb: #{red($color-text-secondary)}, #{green($color-text-secondary)}, #{blue($color-text-secondary)};
+  --color-text-tertiary: #{$color-text-tertiary};
+  --color-text-muted: #{$color-text-muted};
+  --color-text-dark: #{$color-text-dark};
+  --color-text-inverse: #{$color-text-inverse};
+  --color-border-light: #{$color-border-light};
+  --color-border-strong: #{$color-border-strong};
+  --color-highlight-bg: #{$color-highlight-bg};
+  --color-surface: #{$color-surface};
+  --color-surface-rgb: #{red($color-surface)}, #{green($color-surface)}, #{blue($color-surface)};
+  --color-brand-primary: #{$color-brand-primary};
+  --color-brand-primary-rgb: #{red($color-brand-primary)}, #{green($color-brand-primary)}, #{blue($color-brand-primary)};
+  --color-brand-muted: #{$color-brand-muted};
+  --color-brand-soft: #{$color-brand-soft};
+  --color-brand-soft-strong: #{$color-brand-soft-strong};
+  --color-brand-accent: #{$color-brand-accent};
+  --color-brand-accent-rgb: #{red($color-brand-accent)}, #{green($color-brand-accent)}, #{blue($color-brand-accent)};
+  --color-brand-primary-opaque: #{$color-brand-primary-opaque};
+  --color-brand-accent-opaque: #{$color-brand-accent-opaque};
+  --color-overlay-light: #{$color-overlay-light};
+  --color-shadow-soft: #{$color-shadow-soft};
+  --color-shadow-strong: #{$color-shadow-strong};
+  --color-shadow-card: #{$color-shadow-card};
+  --color-calendar-selected: #{$color-calendar-selected};
+
+  --wot-color-theme: var(--color-brand-primary);
+  --wot-button-primary-bg-color: var(--color-brand-primary);
+  --wot-button-primary-border-color: var(--color-brand-primary);
+  --wot-checkbox-checked-icon-color: var(--color-brand-primary);
+  --wot-checkbox-checked-border-color: var(--color-brand-primary);
+  --wot-checkbox-checked-background-color: var(--color-brand-soft-strong);
+  --wot-calendar-selected-background-color: var(--color-calendar-selected);
+  --wot-calendar-selected-color: var(--color-text-primary);
+  --wot-calendar-selected-day-color: var(--color-text-primary);
+  --wot-calendar-day-today-border-color: var(--color-brand-primary);
+  --wot-calendar-day-today-color: var(--color-brand-primary);
+  --wot-calendar-day-selected-border-color: var(--color-brand-primary);
+  --wot-calendar-day-selected-color: var(--color-text-primary);
+  --wot-calendar-day-bottom-info-color: var(--color-brand-primary);
+  --wot-calendar-day-top-info-color: var(--color-brand-primary);
+
+  font-family: 'Noto Serif SC', 'Noto Serif', 'Source Han Serif SC', 'Songti SC', serif;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+}
+
+/*
+border-t-1
+由于uniapp中无法使用*选择器，使用魔法代替*，加上此规则可以简化border与divide的使用，并提升布局的兼容性
+1. 防止padding和border影响元素宽度。 (https://github.com/mozdevs/cssremedy/issues/4)
+2. 允许仅通过添加边框宽度来向元素添加边框。 (https://github.com/tailwindcss/tailwindcss/pull/116)
+3. [UnoCSS]: 允许使用css变量'--un-default-border-color'覆盖默认边框颜色
+*/
+// 这个样式有重大BUG，先去掉！！(2025-08-15)
+// :not(not),
+// ::before,
+// ::after {
+//   box-sizing: border-box; /* 1 */
+//   border-width: 0; /* 2 */
+//   border-style: solid; /* 2 */
+//   border-color: var(--un-default-border-color, #e5e7eb); /* 3 */
+// }

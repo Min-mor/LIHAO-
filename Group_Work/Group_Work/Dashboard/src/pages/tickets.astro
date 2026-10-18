@@ -1,0 +1,8 @@
+---
+import Layout from "../layouts/Layout.astro"
+import TicketCenterShell from "@/components/tickets/TicketCenterShell.vue"
+---
+
+<Layout title="工单中心 - Trip 控制台">
+  <TicketCenterShell client:load activePath="/tickets" />
+</Layout>

@@ -1,0 +1,12 @@
+---
+import Layout from "../../../layouts/Layout.astro"
+import TicketConversationShell from "@/components/tickets/TicketConversationShell.vue"
+
+export const prerender = false
+
+const { ticketId = "" } = Astro.params
+---
+
+<Layout title={`工单 ${ticketId} - Trip 控制台`}>
+  <TicketConversationShell client:load context="ticket" :ticketId="ticketId" activePath="/tickets" />
+</Layout>

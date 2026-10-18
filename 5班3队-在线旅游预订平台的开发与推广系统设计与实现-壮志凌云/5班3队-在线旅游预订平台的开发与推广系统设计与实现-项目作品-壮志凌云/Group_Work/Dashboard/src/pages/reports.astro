@@ -1,0 +1,11 @@
+---
+import Layout from "../layouts/Layout.astro"
+import SalesReportsShell from "@/components/analytics/SalesReportsShell.vue"
+import type { UserRole } from "@/components/dashboard/types"
+
+const role: UserRole = "merchant"
+---
+
+<Layout title="销售报表 - Trip 控制台">
+  <SalesReportsShell client:load role={role} activePath="/reports" />
+</Layout>

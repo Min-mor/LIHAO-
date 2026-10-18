@@ -1,0 +1,29 @@
+package com.febuki.tool.server.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
+@Schema(hidden = true)
+@TableName("wechat_session_key")
+public class WeChatSessionKey {
+    @TableId(value = "id", type = IdType.AUTO)
+    private Long id;
+
+    @TableField("session_key_key")
+    private String sessionKeyKey;
+
+    @TableField("session_key")
+    private String sessionKey;
+
+    @TableField("expiration_time")
+    private LocalDateTime expirationTime;
+}

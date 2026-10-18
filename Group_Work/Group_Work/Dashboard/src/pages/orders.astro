@@ -1,0 +1,11 @@
+---
+import Layout from "../layouts/Layout.astro"
+import OrdersShell from "@/components/merchants/OrdersShell.vue"
+import type { UserRole } from "@/components/dashboard/types"
+
+const role: UserRole = "merchant"
+---
+
+<Layout title="订单中心 - Trip 控制台">
+  <OrdersShell client:load role={role} activePath="/orders" />
+</Layout>

@@ -1,0 +1,5 @@
+figma链接：https://www.figma.com/proto/YktxBspzix0hkZcK1ibGe6/Figma-basics?node-id=1669-162202&t=OcVC6Q5lW9NxdFCo-1  
+
+打不开链接，请点击test文件夹双击html预览  
+ 
+说明：最终代码使用了一版设计

@@ -1,0 +1,11 @@
+---
+import Layout from "../layouts/Layout.astro"
+import MarketingCampaignShell from "@/components/campaigns/MarketingCampaignShell.vue"
+import type { UserRole } from "@/components/dashboard/types"
+
+const role: UserRole = "admin"
+---
+
+<Layout title="营销活动 - Trip 控制台">
+  <MarketingCampaignShell client:load role={role} activePath="/campaigns" />
+</Layout>
